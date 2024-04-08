@@ -1,0 +1,213 @@
+---
+title: "Mixed models by sommer"
+date: "2024-25-03"
+author: "Brenda Monis Moreno e Pedro Henrique Massaro Silveira"
+output: 
+  prettydoc::html_pretty:
+      theme: cayman
+      highlight: github
+---
+
+<style>
+.page-header {
+  color: #fff;
+  text-align: center;
+  background-color: #159957;
+  background-image: linear-gradient(120deg, #cc662f, #003350);
+}
+
+
+.main-content h1,
+.main-content h2,
+.main-content h3,
+.main-content h4,
+.main-content h5,
+.main-content h6 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: normal;
+  color: #003350;
+}
+
+</style>
+
+
+# Different models enabled in sommer
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+
+```{r, eval=FALSE}
+library(sommer)
+```
+
+## 1 Sommer's tutorials 
+
+```{r, echo=FALSE, eval=FALSE}
+  vignette("v1.sommer.quick.start")
+  vignette("v2.sommer.changes.and.faqs")
+  vignette("v3.sommer.qg")
+  vignette("v4.sommer.gxe")
+```
+
+### 1.4 Population Structure and Types of Cultivars
+
+For a better understanding of the model in figure 1.2 "Approach to homozygosity upon selfing", this matrix example was constructed.\
+
+#### Self-crossing:
+
+We use the **Y vector** to represent the initial heterozygous population in F1 (A1A2) and the **X matrix** as a way of representing the factor for transformation other populations after self-crossing.\
+
+```{r, eval=TRUE, echo=TRUE}
+# F1 (A1A2)
+y <- matrix(c(0,1,0),nrow=3); y
+
+# Transformation factor
+X <- matrix(c(1,1/4,0, 0,1/2,0, 0,1/4,1),nrow=3,byrow=T); X
+```
+
+To generate **F2**, we will self-cross F1. To obtain the percentage of homozygotes (A1A1 and A2A2) and heterozygotes (A1A2), we will multiply the X matrix by the Y vector. \
+
+```{r, eval=TRUE, echo=TRUE}
+X %*% y
+```
+
+**Note** that 1/4 is A1A1, 1/2 is A1A2 and 1/4 is A2A2, i.e. Mendel's 1st law. \
+
+Next, as mentioned above, the matrix X is a traTransferência de alelo Recessivo
+aa AA
+Doador (D) Recorrente (R)
+x
+100% alelos D 100% alelos R
+50% alelos D
+50% alelos R
+100% Aa
+50% AA : 50% Aa
+25% alelos D
+75% alelos R
+x
+100% AAnsformation factor. Therefore, simply multiply it by the result obtained previously from (x.y) to obtain the new population structure in **F3**. \
+
+```{r, eval=TRUE, echo=TRUE}
+X %*% X %*% y
+```
+
+**Note** that the numbers in the matrix X are purposeful, because when we multiply, for example, the first row by the column of the vector y, we will multiply by 1 the value we already have in the homozygote A1A1 and then add half the value of the heterozygote. This also applies to the third row, which represents A2A2.\
+
+On the other hand, by multiplying the second row by the column of the vector, we will divide the previous value, in this case 0.5, by 2, resulting in 0.25, the new value of the heterozygote (A1A2). This reasoning can also be taken into account for the other multiplications that we will carry out.\
+
+**Note** that a matrix X can also be interpreted from another perspective. By analyzing its columns, it is noted that they represent the segregation for each population class within a self-crossing. Thus, for example, it means that the percentage of A1A1 in the population will remain unchanged for the next generation; consequently, the first column of X is (1 0 0). Meanwhile, the percentage of A1A2 will be segregated in a 1:2:1 ratio for the next generation; thus, the second column of X is (0.25 0.50 0.25).\
+
+Following this, we will multiply the matrix X again by the result obtained previously from (x.x.y) to obtain the new population structure in **F4**. \
+```{r, eval=TRUE, echo=TRUE}
+X %*% X %*% X %*% y
+```
+
+7 generations of self-seeding: \
+```{r, eval=TRUE, echo=TRUE}
+X %*% X %*% X %*% X %*% X %*% X %*% X %*% y
+```
+
+You may have noticed that this procedure is the same as doing $x^{n}.y$ so that we find the following column vector d = (0.5, 0, 0.5). In other words, a **pure line**. However, what is the value of **n** to satisfy the following equation $x^{n}.y = d$ ?\
+
+Finding the **n** value: 
+```{r, eval=TRUE, echo=TRUE}
+# A = X%*%D%*%solve(X) where X is a matrix with eigenvectors and D is a diagonal matrix with eigenvalues
+
+eva <- eigen(X)$values; eva
+evc <- eigen(X)$vectors; evc
+
+D <- diag(eva); D 
+
+evc%*%D%*%solve(evc) == X
+
+# Therefore, we can estimate the generations simply by raising matrix D, as shown below:
+
+# 3rd generation
+evc%*%(D^3)%*%solve(evc)%*%y
+
+# 7th generation
+evc%*%(D^7)%*%solve(evc)%*%y
+
+# 10th generation
+evc%*%(D^10)%*%solve(evc)%*%y
+
+# 15th generation
+evc%*%(D^15)%*%solve(evc)%*%y
+```
+
+Given this, we can verify that with each generation, our population frequency of heterozygotes will be reduced by half. Therefore, being an exponential function, it will never be equal to zero but will tend to zero. Therefore, from a certain generation n, the difference between subsequent generations will not be significant.\
+
+#### Backcrossing:
+
+##### Dominant allele transfer:
+
+We use the **Z** vector to represent the recurrent allele which has agronomic characteristics of interest, but is susceptible to a disease, for example. The vector **Y** is used to represent the donor allele which has resistance to this disease, but is not agronomically desirable for consumers. While the **X** matrix was a way of representing successive backcrosses.\
+
+Note: At this stage of backcrossing, it is worth stressing that the aim is to study allele frequency.\
+
+```{r, eval=TRUE, echo=TRUE}
+# Recurrent allele - A2A2 genotype
+z <- matrix(c(0,0,1),nrow=3); z 
+
+# Donor allele - A1A1 genotype
+y <- matrix(c(1,0,0),nrow=3); y
+
+# Transformation matrix
+X <- matrix(c(0,0,0,1,0.5,0,0,0.5,1),nrow=3,byrow=T); X
+```
+
+Note that the result obtained from this operation below represents the allele frequency after the 1st backcross, i.e. 50% donor and 50% recurrent.\
+
+```{r, eval=TRUE, echo=TRUE}
+X %*% y
+```
+
+However, we want a genotype that has most of its alleles with agronomic characteristics of interest to us and only the disease resistance allele from the donor. This is why we backcross several times with our recurrent (A2A2).\
+
+```{r, eval=TRUE, echo=TRUE}
+X %*% X %*% y
+
+X %*% X %*% X %*% y
+
+X %*% X %*% X %*% X %*% X %*% X %*% X %*% y
+```
+
+Note that with each backcross, the frequency of the donor allele drops by half, while the frequency of the recurrent allele increases by "half".\
+
+##### Recessive allele transfer:
+
+We use the **Z** vector to represent the recurrent allele which has agronomic characteristics of interest, this has the Dominant Gene (A1A1) and is susceptible to a disease, for example. The **Y** vector is used to represent the donor allele which has a recessive gene and, consequently, resistance to that disease, but is not agronomically desirable for consumers. The **X** matrix was a way of representing successive backcrosses.\
+
+Note: At this stage of backcrossing, it is worth stressing that the aim is to study allele frequency.\
+
+```{r, eval=TRUE, echo=TRUE}
+# Recurrent allele - A1A1 genotype
+z <- matrix(c(1,0,0),nrow=3); z
+
+# Donor allele - A2A2 genotype
+y <- matrix(c(0,0,1),nrow=3); y
+
+# Transformation matrix
+X <- matrix(c(1,0.5,0,0,0.5,1,0,0,0),nrow=3,byrow=T); X
+```
+
+Note that the result obtained from this operation below represents the allele frequency after the 1st backcross, i.e. 50% donor and 50% recurrent.\
+
+```{r, eval=TRUE, echo=TRUE}
+X %*% y
+```
+
+
+
+```{r, eval=TRUE, echo=TRUE}
+X %*% X %*% y
+
+X %*% X %*% X %*% y
+
+X %*% X %*% X %*% X %*% X %*% X %*% X %*% y
+```
+
+Note that with each backcross, the frequency of the donor allele drops by half, while the frequency of the recurrent allele increases by "half".\
