@@ -40,8 +40,8 @@ mod_MixedModel_ui <- function(id){
                  box(width = 4,
                      radioButtons(ns("read_data1"), label = p("Select o separator"),
                                   choices = list("Comma" = ",", "Semicolon" = ";", "Tab" = "\t"),
-                                  selected = "\t")
-                 ),
+                                  selected = ";") 
+                 ), 
                  box(width = 8,  
                      #title = "Database",
                      #data visualisation
@@ -72,43 +72,16 @@ mod_MixedModel_ui <- function(id){
                  )
              ),
              
-             #Select the model
-             box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, status="primary", title = "Select the best model:",
-                 # Run the thre options of models
-                 p("If you don't know which model to analyze and want to use AIC and BIC as guidance, click the button below, and we will run three model options based on the selected items above:"),
-                 actionButton(ns("run_data"), "Run models",icon("refresh")), 
-                 hr(),
-                 box(width = 8,  
-                     #title = "Database",
-                     #data visualisation
-                     tableOutput(ns("dataview"))
-                 ),
-                 p("If you want to consider a pedigree matrix, please submit an csv file as the example:"),
-                 downloadButton(ns("pedigree_example")), hr(),
-                 fileInput("pedigree", label = p("Pedigree matrix")),
-                 hr(),
-                 p("Define the model expression bellow. Here we used 'sommer' package to perform the analysis. Then, consider its syntax."),
-                 p("If you uploaded the pedigree matrix above you can add it in the model with the symbol A."),
-                 textInput(ns("fixed"), label = p("Fixed:"), value = "peso ~ local"),
-                 textInput(ns("random"), label = p("Random:"), value = "~ gen + local:gen"),
-                 textInput(ns("rcov"), label = p("rcov:"), value = "~ units"), hr(),
-                 # radioButtons(ns("rcov"), label = p("Choose the rcov to be evaluated:"), hr(),
-                 #              choices = list("units" = "units", "vsr" = "vsr", "vsc" = "vsc"), 
-                 #              selected = "units"),
-                 actionButton(ns("run_analysis"), "Run analysis",icon("refresh")), br(),
-                 p("Expand the windows above to access the results")
-             ), hr(),
-             
              #Define the model
-             box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, status="primary", title = "Define the model:",
+             box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Define the model:",
                  p("If you want to consider a pedigree matrix, please submit an csv file as the example:"),
                  downloadButton(ns("pedigree_example")), hr(),
                  fileInput("pedigree", label = p("Pedigree matrix")),
                  hr(),
                  p("Define the model expression bellow. Here we used 'sommer' package to perform the analysis. Then, consider its syntax."),
                  p("If you uploaded the pedigree matrix above you can add it in the model with the symbol A."),
-                 textInput(ns("fixed"), label = p("Fixed:"), value = "peso ~ local"),
-                 textInput(ns("random"), label = p("Random:"), value = "~ gen + local:gen"),
+                 textInput(ns("fixed"), label = p("Fixed:"), value = "peso ~ local + local:block"),
+                 textInput(ns("random"), label = p("Random:"), value = "~ vsr(dsr(local),gen)"),
                  textInput(ns("rcov"), label = p("rcov:"), value = "~ units"), hr(),
                  # radioButtons(ns("rcov"), label = p("Choose the rcov to be evaluated:"), hr(),
                  #              choices = list("units" = "units", "vsr" = "vsr", "vsc" = "vsc"), 
@@ -116,8 +89,6 @@ mod_MixedModel_ui <- function(id){
                  actionButton(ns("run_analysis"), "Run analysis",icon("refresh")), br(),
                  p("Expand the windows above to access the results")
              ), hr(),
-             
-             
              
              # Results
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, status="info", title = "Results:",
@@ -250,8 +221,7 @@ mod_MixedModel_server <- function(input, output, session){
         if(!all(c("local", "block", "gen", "corte") %in% colnames(dat)) | ("rep" %in% colnames(dat)))
           stop(safeError("Randomized complete block design should have columns 'local', 'block' and 'gen'."))
         dat <- dat %>% select(c("local", "gen", "block", "corte",input$trait)) %>% 
-          filter(local %in% input$local) %>% droplevels() #%>% 
-        # filter(corte %in% input$corte) %>% droplevels()
+          filter(local %in% input$local) %>% droplevels() 
         
       } else {
         if(!all(c("local", "block", "gen", "corte") %in% colnames(dat)))
@@ -282,7 +252,40 @@ mod_MixedModel_server <- function(input, output, session){
       
       BLUPs <- data.frame(ID = names(mod$U$gen), BLUPs = mod$U$gen)
       
+      # B1 <- mod$U$AC:gen$peso
+      # B2 <- mod$U$RJ:gen$peso
+      # B3 <- mod$U$DF:gen$peso
+      # B4 <- mod$U$RO:gen$peso
+      # B5 <- mod$U$MS:gen$peso
+      #
+      # if(mod$random == "local:gen"){
+      #   BLUPs <- data.frame(ID = names(mod$U$local:gen$peso), BLUPs = mod$U$local:gen$peso)
+      #
+      # } else {
+      #   BLUPs <- data.frame(ID = names(mod$U$local:gen$peso), BLUPs = rbind(B1, B2, B3, B4, B5))}
+      #
+      
+      # B1 <- data.frame(ID = names(mod$U$AC:gen$peso), BLUPs = mod$U$AC:gen$peso)
+      # B2 <- data.frame(ID = names(mod$U$RJ:gen$peso), BLUPs = mod$U$RJ:gen$peso)
+      # B3 <- data.frame(ID = names(mod$U$DF:gen$peso), BLUPs = mod$U$DF:gen$peso)
+      # B4 <- data.frame(ID = names(mod$U$RO:gen$peso), BLUPs = mod$U$RO:gen$peso)
+      # B5 <- data.frame(ID = names(mod$U$MS:gen$peso), BLUPs = mod$U$MS:gen$peso)
+      
+      AC <- mod$U$`AC:gen`$peso
+      RJ <- mod$U$`RJ:gen`$peso
+      DF <- mod$U$`DF:gen`$peso
+      RO <- mod$U$`RO:gen`$peso
+      MS <- mod$U$`MS:gen`$peso
+
+      if(input$random == "local:gen"){
+        BLUPs <- data.frame(ID = names(mod$U$`local:gen`), BLUPs = mod$U$`local:gen`)
+      } else {
+        previa <- cbind(AC, RJ, DF, RO, MS)
+        # BLUPs <- data.frame(ID = names(mod$U$`AC:gen`), BLUPs = previa)
+        BLUPs <- data.frame(ID = names(mod$U$`AC:gen`$peso), previa)
+      }
       incProgress(0.25, detail = paste("Doing part", 2))
+      # list(mod,summary_mod, aic_bic, BLUPs)
       list(mod,summary_mod, aic_bic, BLUPs)
     })
   })
@@ -292,7 +295,7 @@ mod_MixedModel_server <- function(input, output, session){
     
     # Especifique as colunas que deseja arredondar e o número de casas decimais
     # columns_to_round <- c("Sum.Sq", "Mean.Sq", "F.value", "Pr..F.", "outra_coluna1", "outra_coluna2")
-    decimal_places1 <- 4  # Especifique o número de casas decimais
+    decimal_places1 <- 2  # Especifique o número de casas decimais
     
     # Arredonde as colunas selecionadas
     for (col in 1:3) {
@@ -312,27 +315,63 @@ mod_MixedModel_server <- function(input, output, session){
                     buttons = c('copy', 'csv', 'excel', 'pdf')
                   ),
                   class = "display")
+    
   })
   
-  output$aic_bic_out <- DT::renderDataTable(
-    DT::datatable(data.frame(button2()[[3]]),  
+  output$aic_bic_out <- DT::renderDataTable({
+    data <- data.frame(button2()[[3]])
+    
+    # Especifique as colunas que deseja arredondar e o número de casas decimais
+    # columns_to_round <- c("Sum.Sq", "Mean.Sq", "F.value", "Pr..F.", "outra_coluna1", "outra_coluna2")
+    decimal_places1 <- 2  # Especifique o número de casas decimais
+    
+    # Arredonde as colunas selecionadas
+    for (col in 1:2) {
+      data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
+    }
+    
+    # decimal_places1 <- 5
+    # for (col in 5) {
+    #   data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
+    # }
+    
+    # Outputs
+    DT::datatable(data,  
                   extensions = 'Buttons',
                   options = list(
                     dom = 'Brt',
                     buttons = c('copy', 'csv', 'excel', 'pdf')
                   ),
                   class = "display")
-  )
+  })
   
-  output$blups_out <- DT::renderDataTable(
-    DT::datatable(data.frame(button2()[[4]]),  
+  output$blups_out <- DT::renderDataTable({
+    data <- data.frame(button2()[[4]])
+    
+    # Especifique as colunas que deseja arredondar e o número de casas decimais
+    # columns_to_round <- c("Sum.Sq", "Mean.Sq", "F.value", "Pr..F.", "outra_coluna1", "outra_coluna2")
+    decimal_places1 <- 2  # Especifique o número de casas decimais
+    
+    # Arredonde as colunas selecionadas
+    for (col in 2:6) {
+      data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
+    }
+    
+    # decimal_places1 <- 5
+    # for (col in 5) {
+    #   data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
+    # }
+    
+    # Outputs
+    DT::datatable(data, 
+                  rownames = FALSE,
                   extensions = 'Buttons',
                   options = list(
-                    dom = 'Bfrtlp',
+                    dom = 'Brt',
                     buttons = c('copy', 'csv', 'excel', 'pdf')
                   ),
                   class = "display")
-  )
+  })
 }
 
 ## To be copied in the UI

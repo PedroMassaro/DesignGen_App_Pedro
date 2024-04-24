@@ -57,6 +57,7 @@ ans1r <- mmer(Peso ~ Corte + Corte:Bloco ,
                data=data_split_MS)
 summary(ans1r)$varcomp
 summary(ans1r)
+ans1r$AIC
 View(ans1r$U$`Corte:Genotipo`$Peso)
 
 # Modelo 2 - Heterogeniedade de variância
