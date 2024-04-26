@@ -118,6 +118,7 @@ ggplot(data_split_AC, aes(x = Corte, y = Peso, color = Corte)) +
 
 
 AIC <- c(ans1r$AIC, ans2r$AIC)
+#dds
 BIC <- c(ans1r$BIC, ans2r$BIC)
 
 AB <- cbind(AIC, BIC);AB
