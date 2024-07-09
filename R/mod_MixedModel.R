@@ -20,14 +20,14 @@ mod_MixedModel_ui <- function(id){
              # Choose the experiment design
              box(width = 12,
                  selectInput(ns("design"), label = h4("Experiment design"), 
-                             choices = list("Randomized complete block" = "block", "Alpha lattice" = "lattice"), 
-                             selected = "block")
+                             choices = list("Randomized complete block" = "block", "Split-plot design" = "split", "Alpha lattice" = "lattice"), 
+                             selected = "split")
              ),
              
              # Input the file
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Input file",
                  p("The input file is a tab delimited table with a column called 'local' defining the environment, 
-                   other called 'gen' defining the genotypes and other called 'block' defining the block number. 
+                   other called 'gen' defining the genotypes, other called 'harve' defining harvests and other called 'block' defining the block number. 
                    The adjusted phenotypic means should be included in extra columns. Download here an input file example:"),
                  downloadButton(ns("data_example")), hr(),
                  p("Upload here your file:"),
@@ -66,7 +66,7 @@ mod_MixedModel_ui <- function(id){
                                         selected = "Press 'Read the file' button to update")
                  ),
                  box(width = 6,
-                     checkboxGroupInput(ns("corte"), label = p("Choose the harvest to be evaluated:"),
+                     checkboxGroupInput(ns("harve"), label = p("Choose the harvest to be evaluated:"),
                                         choices = "Press 'Read the file' button to update",
                                         selected = "Press 'Read the file' button to update")
                  )
@@ -80,8 +80,8 @@ mod_MixedModel_ui <- function(id){
                  hr(),
                  p("Define the model expression bellow. Here we used 'sommer' package to perform the analysis. Then, consider its syntax."),
                  p("If you uploaded the pedigree matrix above you can add it in the model with the symbol A."),
-                 textInput(ns("fixed"), label = p("Fixed:"), value = "peso ~ local + local:block"),
-                 textInput(ns("random"), label = p("Random:"), value = "~ vsr(dsr(local),gen)"),
+                 textInput(ns("fixed"), label = p("Fixed:"), value = "Peso ~ Corte + Corte:Bloco"),
+                 textInput(ns("random"), label = p("Random:"), value = "~ Genotipo + Corte:Genotipo"),
                  textInput(ns("rcov"), label = p("rcov:"), value = "~ units"), hr(),
                  # radioButtons(ns("rcov"), label = p("Choose the rcov to be evaluated:"), hr(),
                  #              choices = list("units" = "units", "vsr" = "vsr", "vsc" = "vsc"), 
@@ -188,7 +188,7 @@ mod_MixedModel_server <- function(input, output, session){
       choices_locations <- choices_locations_temp
       names(choices_locations) <- choices_locations_temp
       
-      choices_corte_temp <- unique(button1()[,"corte"])
+      choices_corte_temp <- unique(button1()[,"harve"])
       choices_corte <- choices_corte_temp
       names(choices_corte) <- choices_corte_temp
       
@@ -201,7 +201,7 @@ mod_MixedModel_server <- function(input, output, session){
                                label="Choose the locations to be evaluated:",
                                choices = choices_locations)
       
-      updateCheckboxGroupInput(session, "corte",
+      updateCheckboxGroupInput(session, "harve",
                                label="Choose the harvest to be evaluated:",
                                choices = choices_corte)
   })

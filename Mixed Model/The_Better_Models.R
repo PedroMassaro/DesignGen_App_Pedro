@@ -2,7 +2,7 @@
 
 # Carregando os dados:
 library(readxl)
-dados_exp <- read_xls("C:/Users/Pedro Henrique/Desktop/Data science/Iniciação Científica/Codigos_Vitoria/Dados_MFS.xls")
+dados_exp <- read_xls("~/Desktop/Data Science/Iniciação Científica/Dados/Dados_MFS.xls")
 
 # Definindo dados como fatores e Renomeando as colunas:
 library(dplyr)
@@ -70,10 +70,12 @@ View(ans1r$U$`Corte:Genotipo`$Peso)
 # summary(ans2r)
 # View(ans2r$U$`1:Genotipo`$Peso)
 
+data_split_MS.01 <- na.omit(data_split_MS)
+
 ans2.1r <- mmer(Peso ~ Corte + Corte:Bloco,
               random= ~ vsr(dsr(Corte),Genotipo),
               rcov= ~ units,
-              data=data_split_MS)
+              data=data_split_MS.01)
 summary(ans2.1r)$varcomp
 summary(ans2.1r)
 View(ans2.1r$U$`Corte:Genotipo`$Peso)
@@ -88,6 +90,12 @@ ans2.2r <- mmer(Peso ~ Corte + Corte:Bloco,
 summary(ans2.2r)$varcomp
 summary(ans2.2r)
 View(ans2.1r$U$`Corte:Genotipo`$Peso)
+
+ggplot(data_split_MS.01, aes(x = Corte, y = Peso, color = Corte)) +
+  geom_point() +
+  labs(x = "Corte", y = "Peso") +
+  ggtitle("Peso vs. Corte") +
+  theme_minimal()
 
 #rodar para o Acre
 data_split_AC <- dados_fil %>% 
