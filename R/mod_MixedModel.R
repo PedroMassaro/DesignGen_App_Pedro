@@ -8,7 +8,7 @@
 #'
 #' @importFrom shiny NS tagList 
 
-# ui part ----
+# UI part ----
 mod_MixedModel_ui <- function(id){ 
   ns <- NS(id)
   tagList(
@@ -32,79 +32,30 @@ mod_MixedModel_ui <- function(id){
                  downloadButton(ns("data_example")), hr(),
                  p("Upload here your file:"),
                  fileInput(ns("data_input"), label = h6("File: data.txt"), multiple = F),
-                 p("If you do not have an file to be upload you can still check this app features with our example file. The example file is automatically upload, you just need to procedure to the other buttons."),
+                 p("If you do not have a file to upload you can still check this app's features with our example file. The example file is automatically uploaded, you just need to proceed to the other buttons."),
                  
-                 #Input Control
+                 # Input Control
                  hr(),
                  p("Data View:"),
                  box(width = 4,
-                     radioButtons(ns("read_data1"), label = p("Select o separator"),
+                     radioButtons(ns("read_data1"), label = p("Select the separator"),
                                   choices = list("Comma" = ",", "Semicolon" = ";", "Tab" = "\t"),
-                                  selected = ";") 
+                                  selected = ",") 
                  ), 
                  box(width = 8,  
-                     #title = "Database",
-                     #data visualisation
                      tableOutput(ns("dataview"))
                  ),
-                 # Read the file
                  hr(),
-                 actionButton(ns("read_data"), "Read the file",icon("refresh")), 
+                 actionButton(ns("read_data"), "Read the file", icon("refresh")), 
                  hr(),
              ),
              
-             #Select variables
-             box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Select variables",
-                 box(width = 6,
-                     radioButtons(ns("trait"), label = p("Choose the traits to be evaluated:"),
-                                  choices = "Press 'Read the file' button to update",
-                                  selected = "Press 'Read the file' button to update"),
-                 ),
-                 box(width = 6,
-                     checkboxGroupInput(ns("local"), label = p("Choose the location to be evaluated:"),
-                                        choices = "Press 'Read the file' button to update",
-                                        selected = "Press 'Read the file' button to update")
-                 ),
-                 box(width = 6,
-                     checkboxGroupInput(ns("harve"), label = p("Choose the harvest to be evaluated:"),
-                                        choices = "Press 'Read the file' button to update",
-                                        selected = "Press 'Read the file' button to update")
-                 )
-             ),
-             
-             #Define the model
-             box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Define the model:",
-                 p("If you want to consider a pedigree matrix, please submit an csv file as the example:"),
-                 downloadButton(ns("pedigree_example")), hr(),
-                 fileInput("pedigree", label = p("Pedigree matrix")),
-                 hr(),
-                 p("Define the model expression bellow. Here we used 'sommer' package to perform the analysis. Then, consider its syntax."),
-                 p("If you uploaded the pedigree matrix above you can add it in the model with the symbol A."),
-                 textInput(ns("fixed"), label = p("Fixed:"), value = "Peso ~ Corte + Corte:Bloco"),
-                 textInput(ns("random"), label = p("Random:"), value = "~ Genotipo + Corte:Genotipo"),
-                 textInput(ns("rcov"), label = p("rcov:"), value = "~ units"), hr(),
-                 # radioButtons(ns("rcov"), label = p("Choose the rcov to be evaluated:"), hr(),
-                 #              choices = list("units" = "units", "vsr" = "vsr", "vsc" = "vsc"), 
-                 #              selected = "units"),
-                 actionButton(ns("run_analysis"), "Run analysis",icon("refresh")), br(),
-                 p("Expand the windows above to access the results")
-             ), hr(),
-             
-             # Results
-             box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, status="info", title = "Results:",
-                 box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Variance components:",
-                     DT::dataTableOutput(ns("varcomp_out"))
-                 ),
-                 box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "AIC and BIC",
-                     DT::dataTableOutput(ns("aic_bic_out"))
-                 ),
-                 box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "BLUPs",
-                     DT::dataTableOutput(ns("blups_out"))
-                 ),
-             )
+             # Select variables
+             uiOutput(ns("dynamic_ui"))
     )
   )
 }
+
 
 #' MixedModel Server Function
 #'
@@ -174,36 +125,61 @@ mod_MixedModel_server <- function(input, output, session){
     dat
   })
   
-  observe({
+  # Dynamic UI based on experiment design and data input
+  output$dynamic_ui <- renderUI({
+    req(button1())
     
-    if(any(colnames(button1()) %in% "rep"))
-      choices_trait_temp <- colnames(button1())[-c(1:4)] else
-        choices_trait_temp <- colnames(button1())[-c(1:3)]
+    dat <- button1()
+    
+    tagList(
+      box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Select variables",
+          box(width = 6,
+              radioButtons(ns("trait"), label = p("Choose the traits to be evaluated:"),
+                           choices = colnames(dat)[-c(1:3)],
+                           selected = colnames(dat)[-c(1:3)][1])
+          ),
+          box(width = 6,
+              checkboxGroupInput(ns("local"), label = p("Choose the location to be evaluated:"),
+                                 choices = unique(dat$local),
+                                 selected = unique(dat$local))
+          ),
+          if (input$design == "split") {
+            box(width = 6,
+                checkboxGroupInput(ns("harve"), label = p("Choose the harvest to be evaluated:"),
+                                   choices = unique(dat$harve),
+                                   selected = unique(dat$harve))
+            )
+          }
+      ),
       
-      #Choose the trait and the location   
-      choices_trait <- choices_trait_temp
-      names(choices_trait) <- choices_trait_temp
+      # Define the model
+      box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Define the model:",
+          p("If you want to consider a pedigree matrix, please submit a CSV file as the example:"),
+          downloadButton(ns("pedigree_example")), hr(),
+          fileInput(ns("pedigree"), label = p("Pedigree matrix")),
+          hr(),
+          p("Define the model expression below. Here we used the 'sommer' package to perform the analysis. Then, consider its syntax."),
+          p("If you uploaded the pedigree matrix above you can add it in the model with the symbol A."),
+          textInput(ns("fixed"), label = p("Fixed:"), value = "Peso ~ Corte + Corte:Bloco"),
+          textInput(ns("random"), label = p("Random:"), value = "~ Genotipo + Corte:Genotipo"),
+          textInput(ns("rcov"), label = p("rcov:"), value = "~ units"), hr(),
+          actionButton(ns("run_analysis"), "Run analysis", icon("refresh")), br(),
+          p("Expand the windows above to access the results")
+      ),
       
-      choices_locations_temp <- unique(button1()[,"local"])
-      choices_locations <- choices_locations_temp
-      names(choices_locations) <- choices_locations_temp
-      
-      choices_corte_temp <- unique(button1()[,"harve"])
-      choices_corte <- choices_corte_temp
-      names(choices_corte) <- choices_corte_temp
-      
-      updateRadioButtons(session, "trait",
-                         label="Choose the trait to be evaluated:",
-                         choices = choices_trait,
-                         selected = unlist(choices_trait)[1])
-      
-      updateCheckboxGroupInput(session, "local",
-                               label="Choose the locations to be evaluated:",
-                               choices = choices_locations)
-      
-      updateCheckboxGroupInput(session, "harve",
-                               label="Choose the harvest to be evaluated:",
-                               choices = choices_corte)
+      # Results
+      box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, status="info", title = "Results:",
+          box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Variance components:",
+              DT::dataTableOutput(ns("varcomp_out"))
+          ),
+          box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "AIC and BIC",
+              DT::dataTableOutput(ns("aic_bic_out"))
+          ),
+          box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "BLUPs",
+              DT::dataTableOutput(ns("blups_out"))
+          )
+      )
+    )
   })
   
   # defining the model as a factor
