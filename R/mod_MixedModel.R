@@ -242,20 +242,59 @@ mod_MixedModel_server <- function(input, output, session){
     })
   })
   
-  observeEvent(input$filter_data, {
-    num <- length(input$select)
-    col_names <- input$select
-
-    data <- button1
-    
-    lapply(seq_len(num), function(i) {
-      data <- data %>%
-        filter(dat[[input$select[i]]] %in% c(input[[paste0("filter", i)]])) %>%
-        droplevels()
+  # observeEvent(input$filter_data, {
+  #   num <- length(input$select)
+  #   col_names <- input$select
+  # 
+  #   data <- button1
+  #   
+  #   lapply(seq_len(num), function(i) {
+  #     data <- data %>%
+  #       filter(dat[[input$select[i]]] %in% c(input[[paste0("filter", i)]])) %>%
+  #       droplevels()
+  #   })
+  #   print(str(data))
+  #   # print(input[[paste0("filter", 1)]])
+  #   # print(input$filter1)
+  # })
+  
+  button3 <- eventReactive(input$filter_data, {
+    withProgress(message = 'Building graphic', value = 0, {
+      incProgress(0, detail = paste("Doing part", 1))
+      
+      data <- button1()
+      
+      if (length(input$select) > 0) {
+          n <- length(input$select)
+          # print(str(dat))
+          for (i in 1:n) {
+              data[[input$select[i]]] <- as.factor(data[[input$select[i]]])
+          }
+        } 
+      
+        num <- length(input$select)
+        col_names <- input$select
+       
+        for (i in 1:num) {
+          data <- data %>%
+            filter(data[[input$select[i]]] %in% c(input[[paste0("filter", i)]])) %>%
+            droplevels()
+        }
+        # print(str(data))
+        # print(input[[paste0("filter", 1)]])
+        # print(input$filter1)
+ 
+      
+      incProgress(0.25, detail = paste("Doing part", 2))
+      data
     })
-    print(str(data))
-    # print(input[[paste0("filter", 1)]])
-    # print(input$filter1)
+  })
+  
+  observeEvent(input$filter_data, {
+    print(str(button3()))
+    print(input[[paste0("filter", 1)]])
+    print(input$filter1)
+    print(input$select)
   })
   
   observe({
