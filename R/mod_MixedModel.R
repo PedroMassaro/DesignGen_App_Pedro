@@ -339,41 +339,8 @@ mod_MixedModel_server <- function(input, output, session){
       
       aic_bic <- data.frame(AIC = mod$AIC, BIC = mod$BIC)
       
-      BLUPs <- data.frame(ID = names(mod$U$gen), BLUPs = mod$U$gen)
+      BLUPs <- data.frame(ID = levels(dat[[input$harve]]), BLUPs = mod$U[[input$harve]])
       rownames(BLUPs) <- NULL
-      
-      # B1 <- mod$U$AC:gen$peso
-      # B2 <- mod$U$RJ:gen$peso
-      # B3 <- mod$U$DF:gen$peso
-      # B4 <- mod$U$RO:gen$peso
-      # B5 <- mod$U$MS:gen$peso
-      #
-      # if(mod$random == "local:gen"){
-      #   BLUPs <- data.frame(ID = names(mod$U$local:gen$peso), BLUPs = mod$U$local:gen$peso)
-      #
-      # } else {
-      #   BLUPs <- data.frame(ID = names(mod$U$local:gen$peso), BLUPs = rbind(B1, B2, B3, B4, B5))}
-      #
-      
-      # B1 <- data.frame(ID = names(mod$U$AC:gen$peso), BLUPs = mod$U$AC:gen$peso)
-      # B2 <- data.frame(ID = names(mod$U$RJ:gen$peso), BLUPs = mod$U$RJ:gen$peso)
-      # B3 <- data.frame(ID = names(mod$U$DF:gen$peso), BLUPs = mod$U$DF:gen$peso)
-      # B4 <- data.frame(ID = names(mod$U$RO:gen$peso), BLUPs = mod$U$RO:gen$peso)
-      # B5 <- data.frame(ID = names(mod$U$MS:gen$peso), BLUPs = mod$U$MS:gen$peso)
-      
-      # AC <- mod$U$`AC:gen`$peso
-      # RJ <- mod$U$`RJ:gen`$peso
-      # DF <- mod$U$`DF:gen`$peso
-      # RO <- mod$U$`RO:gen`$peso
-      # MS <- mod$U$`MS:gen`$peso
-      # 
-      # if(input$random == "local:gen"){
-      #   BLUPs <- data.frame(ID = names(mod$U$`local:gen`), BLUPs = mod$U$`local:gen`)
-      # } else {
-      #   previa <- cbind(AC, RJ, DF, RO, MS)
-      #   # BLUPs <- data.frame(ID = names(mod$U$`AC:gen`), BLUPs = previa)
-      #   BLUPs <- data.frame(ID = names(mod$U$`AC:gen`$peso), previa)
-      # }
       
       incProgress(0.25, detail = paste("Doing part", 2))
       # list(mod,summary_mod, aic_bic, BLUPs)
@@ -385,18 +352,12 @@ mod_MixedModel_server <- function(input, output, session){
     data <- data.frame(button2()[[2]]$varcomp)
     
     # Especifique as colunas que deseja arredondar e o número de casas decimais
-    # columns_to_round <- c("Sum.Sq", "Mean.Sq", "F.value", "Pr..F.", "outra_coluna1", "outra_coluna2")
-    decimal_places1 <- 4  # Especifique o número de casas decimais
+    decimal_places1 <- 2  # Especifique o número de casas decimais
     
     # Arredonde as colunas selecionadas
     for (col in 1:3) {
       data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
     }
-    
-    # decimal_places1 <- 5
-    # for (col in 5) {
-    #   data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
-    # }
     
     DT::datatable(data,  
                   extensions = 'Buttons',
@@ -407,25 +368,49 @@ mod_MixedModel_server <- function(input, output, session){
                   class = "display")
   })
   
-  output$aic_bic_out <- DT::renderDataTable(
-    DT::datatable(data.frame(button2()[[3]]),  
+  output$aic_bic_out <- DT::renderDataTable({
+    data <- data.frame(button2()[[3]])
+    
+    # Especifique as colunas que deseja arredondar e o número de casas decimais
+    decimal_places1 <- 2  # Especifique o número de casas decimais
+    
+    # Arredonde as colunas selecionadas
+    for (col in 1:2) {
+      data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
+    }
+    
+    # Outputs
+    DT::datatable(data,
+                  rownames = FALSE,
                   extensions = 'Buttons',
                   options = list(
                     dom = 'Brt',
                     buttons = c('copy', 'csv', 'excel', 'pdf')
                   ),
                   class = "display")
-  )
+  })
   
-  output$blups_out <- DT::renderDataTable(
-    DT::datatable(data.frame(button2()[[4]]),  
+  output$blups_out <- DT::renderDataTable({
+    data <- data.frame(button2()[[4]])
+    
+    # Especifique as colunas que deseja arredondar e o número de casas decimais
+    decimal_places1 <- 2  # Especifique o número de casas decimais
+    
+    # Arredonde as colunas selecionadas
+    for (col in 2) {
+      data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
+    }
+
+    # Outputs
+    DT::datatable(data,
+                  rownames = FALSE,
                   extensions = 'Buttons',
                   options = list(
-                    dom = 'Bfrtlp',
+                    dom = 'Brt',
                     buttons = c('copy', 'csv', 'excel', 'pdf')
                   ),
                   class = "display")
-  )
+  })
 }
 
 ## To be copied in the UI
@@ -433,94 +418,3 @@ mod_MixedModel_server <- function(input, output, session){
 
 ## To be copied in the server
 # callModule(mod_MixedModel_server, "MixedModel_ui_1")
-
-
-#   output$varcomp_out <- DT::renderDataTable({
-#     data <- data.frame(button2()[[2]]$varcomp)
-#     
-#     # Especifique as colunas que deseja arredondar e o número de casas decimais
-#     # columns_to_round <- c("Sum.Sq", "Mean.Sq", "F.value", "Pr..F.", "outra_coluna1", "outra_coluna2")
-#     decimal_places1 <- 2  # Especifique o número de casas decimais
-#     
-#     # Arredonde as colunas selecionadas
-#     for (col in 1:3) {
-#       data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
-#     }
-#     
-#     # decimal_places1 <- 5
-#     # for (col in 5) {
-#     #   data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
-#     # }
-#     
-#     # Outputs
-#     DT::datatable(data,  
-#                   extensions = 'Buttons',
-#                   options = list(
-#                     dom = 'Bfrtlp',
-#                     buttons = c('copy', 'csv', 'excel', 'pdf')
-#                   ),
-#                   class = "display")
-#     
-#   })
-#   
-#   output$aic_bic_out <- DT::renderDataTable({
-#     data <- data.frame(button2()[[3]])
-#     
-#     # Especifique as colunas que deseja arredondar e o número de casas decimais
-#     # columns_to_round <- c("Sum.Sq", "Mean.Sq", "F.value", "Pr..F.", "outra_coluna1", "outra_coluna2")
-#     decimal_places1 <- 2  # Especifique o número de casas decimais
-#     
-#     # Arredonde as colunas selecionadas
-#     for (col in 1:2) {
-#       data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
-#     }
-#     
-#     # decimal_places1 <- 5
-#     # for (col in 5) {
-#     #   data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
-#     # }
-#     
-#     # Outputs
-#     DT::datatable(data,  
-#                   extensions = 'Buttons',
-#                   options = list(
-#                     dom = 'Brt',
-#                     buttons = c('copy', 'csv', 'excel', 'pdf')
-#                   ),
-#                   class = "display")
-#   })
-#   
-#   output$blups_out <- DT::renderDataTable({
-#     data <- data.frame(button2()[[4]])
-#     
-#     # Especifique as colunas que deseja arredondar e o número de casas decimais
-#     # columns_to_round <- c("Sum.Sq", "Mean.Sq", "F.value", "Pr..F.", "outra_coluna1", "outra_coluna2")
-#     decimal_places1 <- 2  # Especifique o número de casas decimais
-#     
-#     # Arredonde as colunas selecionadas
-#     for (col in 2:6) {
-#       data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
-#     }
-#     
-#     # decimal_places1 <- 5
-#     # for (col in 5) {
-#     #   data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
-#     # }
-#     
-#     # Outputs
-#     DT::datatable(data, 
-#                   rownames = FALSE,
-#                   extensions = 'Buttons',
-#                   options = list(
-#                     dom = 'Brt',
-#                     buttons = c('copy', 'csv', 'excel', 'pdf')
-#                   ),
-#                   class = "display")
-#   })
-# }
-# 
-# ## To be copied in the UI
-# # mod_MixedModel_ui("MixedModel_ui_1")
-# 
-# ## To be copied in the server
-# # callModule(mod_MixedModel_server, "MixedModel_ui_1")
