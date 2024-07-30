@@ -14,7 +14,7 @@ mod_MixedModel_ui <- function(id){
   tagList(
     fluidRow(style = "height:5000px",
              box(width = 12, 
-                 p("Run analysis with mixed models - Pedro")
+                 p("Run analysis with mixed models")
              ),
              
              # Choose the experiment design
@@ -53,25 +53,6 @@ mod_MixedModel_ui <- function(id){
                  hr(),
              ),
              
-             #Select variables
-             box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Select variables",
-                 box(width = 4,
-                     radioButtons(ns("trait"), label = p("Choose the traits to be evaluated:"),
-                                  choices = "Press 'Read the file' button to update",
-                                  selected = "Press 'Read the file' button to update"),
-                 ),
-                 box(width = 4,
-                     checkboxGroupInput(ns("local"), label = p("Choose the location to be evaluated:"),
-                                        choices = "Press 'Read the file' button to update",
-                                        selected = "Press 'Read the file' button to update")
-                 ),
-                 box(width = 4,
-                     checkboxGroupInput(ns("harve"), label = p("Choose the harvest to be evaluated:"),
-                                        choices = "Press 'Read the file' button to update",
-                                        selected = "Press 'Read the file' button to update")
-                 )
-             ),
-             
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status = "primary", title = "Data Filtering",
                  box(width = 6,
                      radioButtons(ns("filter"), label = p("Would you like to filter your data?"),
@@ -86,23 +67,33 @@ mod_MixedModel_ui <- function(id){
                  
                  hr(),
                  actionButton(ns("filter_read"), "Filter the file",icon("refresh")), 
-                 hr(),
                  
-                 # conditionalPanel(
-                 #   condition = "input.filter == 'Yes'",
-                 #   box(width = 4,
-                 #       checkboxGroupInput(ns("select"), label = p("Choose the harvest to be evaluated:"),
-                 #                          choices = "Press 'Read the file' button to update",
-                 #                          selected = "Press 'Read the file' button to update")
-                 #   )
-                 # ),
-                 # 
-                 # hr(),
-                 # conditionalPanel(
-                 #   condition = "input.filter == 'Yes'",
-                 uiOutput(ns("dynamic_filter_boxes"))
-                 # )
+                 hr(),
+                 uiOutput(ns("dynamic_filter_boxes")),
+                 
+                 hr(),
+                 actionButton(ns("filter_data"), "Finish",icon("refresh"))
              ),
+             
+             #Select variables
+             box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Select variables",
+                 box(width = 4,
+                     radioButtons(ns("trait"), label = p("Choose the traits to be evaluated:"),
+                                  choices = "Press 'Read the file' button to update",
+                                  selected = "Press 'Read the file' button to update"),
+                 ),
+                 box(width = 4,
+                     radioButtons(ns("local"), label = p("Choose the location to be evaluated:"),
+                                        choices = "Press 'Read the file' button to update",
+                                        selected = "Press 'Read the file' button to update")
+                 ),
+                 box(width = 4,
+                     radioButtons(ns("harve"), label = p("Choose the harvest to be evaluated:"),
+                                        choices = "Press 'Read the file' button to update",
+                                        selected = "Press 'Read the file' button to update")
+                 )
+             ),
+             
              
              #Define the model
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Define the model:",
@@ -205,6 +196,69 @@ mod_MixedModel_server <- function(input, output, session){
   })
   
   observe({
+    req(input$filter == "Yes")
+    choices_trait_temp <- colnames(button1())
+    #Choose the trait and the location
+    choices_trait <- choices_trait_temp
+    names(choices_trait) <- choices_trait_temp
+    
+    updateCheckboxGroupInput(session, "select",
+                             label="Choose the factors to be filtered:",
+                             choices = choices_trait)
+  })
+  
+  observeEvent(input$read_data, {
+    observeEvent(input$filter_read, {
+      output$dynamic_filter_boxes <- renderUI({
+        req(input$filter == "Yes")
+        dat <- button1()
+        print(input$select[1])
+        
+        if (length(input$select) > 0) {
+          n <- length(input$select)
+          # print(str(dat))
+          for (i in 1:n) {
+              dat[[input$select[i]]] <- as.factor(dat[[input$select[i]]])
+          }
+        } 
+        
+        num <- length(input$select)
+        col_names <- input$select
+        
+        lapply(seq_len(num), function(i) {
+          if(is.factor(dat[[input$select[i]]])) {
+            box(
+              width = 4,
+              checkboxGroupInput(
+                ns(paste0("filter", i)),
+                label = paste("Select data from", col_names[i], ":"),
+                choices = unique(dat[[input$select[i]]]),
+                selected = unique(dat[[input$select[i]]])[1]
+              )
+            )
+          }
+        })
+      })
+    })
+  })
+  
+  observeEvent(input$filter_data, {
+    num <- length(input$select)
+    col_names <- input$select
+
+    data <- button1
+    
+    lapply(seq_len(num), function(i) {
+      data <- data %>%
+        filter(dat[[input$select[i]]] %in% c(input[[paste0("filter", i)]])) %>%
+        droplevels()
+    })
+    print(str(data))
+    # print(input[[paste0("filter", 1)]])
+    # print(input$filter1)
+  })
+  
+  observe({
     #Generalizar
       choices_trait_temp <- colnames(button1())
       #Choose the trait and the location
@@ -226,97 +280,7 @@ mod_MixedModel_server <- function(input, output, session){
                          choices = choices_trait,
                          selected = unlist(choices_trait)[1])
   })
-  
-  observe({
-    req(input$filter == "Yes")
-    choices_trait_temp <- colnames(button1())
-    #Choose the trait and the location
-    choices_trait <- choices_trait_temp
-    names(choices_trait) <- choices_trait_temp
-    
-    updateCheckboxGroupInput(session, "select",
-                       label="Choose the trait to be evaluated:",
-                       choices = choices_trait)
-    
-    # checkboxGroupInput(ns("select"), label = p("Choose the harvest to be evaluated:"),
-    #                    choices = "Press 'Read the file' button to update",
-    #                    selected = "Press 'Read the file' button to update")
-  })
-  
-  
-  observeEvent(input$read_data1, {
-    observeEvent(input$data_input, {
-      output$dynamic_filter_boxes <- renderUI({
-        req(input$filter == "Yes"
-            # , data()
-            )
-        dat <- button1()
-        
-        if (ncol(dat) > 0) {
-          n <- ncol(dat)
-          # print(str(dat))
-          for (i in 1:n) {
-            if (colnames(dat)[i] == input$trait) {
-              dat[, i] <- as.double(dat[, i])
-            } else {
-              dat[, i] <- as.factor(dat[, i])
-              # print(paste("Column", i, "converted to factor"))
-            }
-          }
-        } 
-        
-        num_cols <- ncol(dat)
-        col_names <- colnames(dat)
-        
-        lapply(seq_len(num_cols), function(i) {
-          if(is.factor(dat[[i]])) {
-          box(
-            width = 4,
-            checkboxGroupInput(
-              ns(paste0("filter", i)), 
-              label = paste("Select data from", col_names[i], ":"),
-              choices = unique(dat[[i]]),
-              selected = unique(dat[[i]])[1]
-            )
-          )
-          }
-        })
-      })
-      
-      # # Filtered data output
-      # output$filtered_data <- renderTable({
-      #   req(input$filter == "Yes", data())
-      #   
-      #   filtered_data <- data()
-      #   
-      #   lapply(seq_len(ncol(filtered_data)), function(i) {
-      #     filter_values <- input[[paste0("filter", i)]]
-      #     if (!is.null(filter_values)) {
-      #       filtered_data <- filtered_data[filtered_data[[i]] %in% filter_values, ]
-      #     }
-      #   })
-      #   
-      #   filtered_data
-      # })
-    })
-  })  
-  
-  # Dynamic filter boxes
-  
-  
-  # # Filter and select necessary columns
-  # dados_fil <- dados %>%
-  #   select(all_of(c("Local", "Genotipo", "Bloco", "Corte", "Peso"))) %>%
-  #   filter(Local %in% input$local) %>%
-  #   filter(Corte %in% input$harve) %>%
-  #   droplevels()
-  # 
-  # # Check if the filtered data is not empty
-  # if(nrow(dados_fil) == 0){
-  #   output$datav <- renderText({"No data available after filtering. Please check your filter conditions."})
-  #   return()
-  # }
-  
+
   # defining the model as a factor
   button2 <- eventReactive(input$run_analysis, {
     withProgress(message = 'Building graphic', value = 0, {
