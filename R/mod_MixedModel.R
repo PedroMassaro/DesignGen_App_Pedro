@@ -363,7 +363,8 @@ mod_MixedModel_server <- function(input, output, session){
                   extensions = 'Buttons',
                   options = list(
                     dom = 'Bfrtlp',
-                    buttons = c('copy', 'csv', 'excel', 'pdf')
+                    buttons = c('copy', 'csv', 'excel', 'pdf'),
+                    columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centraliza o texto de todas as colunas
                   ),
                   class = "display")
   })
@@ -385,7 +386,8 @@ mod_MixedModel_server <- function(input, output, session){
                   extensions = 'Buttons',
                   options = list(
                     dom = 'Brt',
-                    buttons = c('copy', 'csv', 'excel', 'pdf')
+                    buttons = c('copy', 'csv', 'excel', 'pdf'),
+                    columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centraliza o texto de todas as colunas
                   ),
                   class = "display")
   })
@@ -406,8 +408,9 @@ mod_MixedModel_server <- function(input, output, session){
                   rownames = FALSE,
                   extensions = 'Buttons',
                   options = list(
-                    dom = 'Brt',
-                    buttons = c('copy', 'csv', 'excel', 'pdf')
+                    dom = 'Bfrtlp',
+                    buttons = c('copy', 'csv', 'excel', 'pdf'),
+                    columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centraliza o texto de todas as colunas
                   ),
                   class = "display")
   })
