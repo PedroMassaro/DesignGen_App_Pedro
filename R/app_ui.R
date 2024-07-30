@@ -27,7 +27,8 @@ app_ui <- function(request) {
                    #menuSubItem("Assumptions test", tabName = "METassumptionsTest", icon = icon("crosshairs")),
                    menuSubItem("Selection indices", tabName = "METindices", icon = icon("minus")),
                    menuSubItem("Stability analysis", tabName = "MET_metan", icon = icon("minus")),
-                   menuSubItem("Mixed models", tabName = "mixedModel", icon = icon("minus"))
+                   menuSubItem("Mixed models", tabName = "mixedModel", icon = icon("minus")),
+                   menuSubItem("Mixed models 1", tabName = "mixedModel1", icon = icon("minus"))
           ),
           # New menuItem 
           menuItem("Statistical analysis", tabName = "Stat", 
@@ -144,6 +145,9 @@ app_ui <- function(request) {
           ),
           tabItem(tabName = "mixedModel",
                   mod_MixedModel_ui("MixedModel_ui_1")
+          ),
+          tabItem(tabName = "mixedModel1",
+                  mod_MixedModel1_ui("MixedModel1_ui_1")
           ),
           # Third tab
           tabItem(tabName = "DIC",

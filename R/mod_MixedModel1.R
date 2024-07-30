@@ -9,7 +9,7 @@
 #' @importFrom shiny NS tagList 
 
 # ui part ----
-mod_MixedModel_ui <- function(id){ 
+mod_MixedModel1_ui <- function(id){ 
   ns <- NS(id)
   tagList(
     fluidRow(style = "height:5000px",
@@ -73,35 +73,15 @@ mod_MixedModel_ui <- function(id){
              ),
              
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status = "primary", title = "Data Filtering",
-                 box(width = 6,
-                     radioButtons(ns("filter"), label = p("Would you like to filter your data?"),
-                                  choices = c("Yes", "No"),
-                                  selected = "No"),
-                 ),
-                 box(width = 6,
-                     checkboxGroupInput(ns("select"), label = p("Choose the harvest to be evaluated:"),
-                                        choices = "Press 'Read the file' button to update",
-                                        selected = "Press 'Read the file' button to update")
-                 ),
-                 
+                 radioButtons(ns("filter"), label = p("Would you like to filter your data?"),
+                              choices = c("Yes", "No"),
+                              selected = "No"),
                  hr(),
-                 actionButton(ns("filter_read"), "Filter the file",icon("refresh")), 
-                 hr(),
-                 
-                 # conditionalPanel(
-                 #   condition = "input.filter == 'Yes'",
-                 #   box(width = 4,
-                 #       checkboxGroupInput(ns("select"), label = p("Choose the harvest to be evaluated:"),
-                 #                          choices = "Press 'Read the file' button to update",
-                 #                          selected = "Press 'Read the file' button to update")
-                 #   )
-                 # ),
-                 # 
-                 # hr(),
-                 # conditionalPanel(
-                 #   condition = "input.filter == 'Yes'",
-                 uiOutput(ns("dynamic_filter_boxes"))
-                 # )
+                   box(width = 12,
+                       checkboxGroupInput(ns("fil"), label = p("Choose the harvest to be evaluated:"),
+                                          choices = "Press 'Read the file' button to update",
+                                          selected = "Press 'Read the file' button to update")
+                 )
              ),
              
              #Define the model
@@ -142,7 +122,7 @@ mod_MixedModel_ui <- function(id){
 #' @noRd 
 #' 
 # server part ----
-mod_MixedModel_server <- function(input, output, session){
+mod_MixedModel1_server <- function(input, output, session){
   ns <- session$ns
   ## download input
   output$data_example <- downloadHandler(
@@ -206,10 +186,22 @@ mod_MixedModel_server <- function(input, output, session){
   
   observe({
     #Generalizar
-      choices_trait_temp <- colnames(button1())
+    if(any(colnames(button1()) %in% "Local"))
+      choices_trait_temp <- colnames(button1())[-c(1:4)] else
+        choices_trait_temp <- colnames(button1())[-c(1:3)]
+      
       #Choose the trait and the location
       choices_trait <- choices_trait_temp
       names(choices_trait) <- choices_trait_temp
+      
+      #Generalizar
+      choices_locations_temp <- unique(button1()[,"Local"])
+      choices_locations <- choices_locations_temp
+      names(choices_locations) <- choices_locations_temp
+      
+      choices_corte_temp <- unique(button1()[,"Corte"])
+      choices_corte <- choices_corte_temp
+      names(choices_corte) <- choices_corte_temp
       
       updateRadioButtons(session, "trait",
                          label="Choose the trait to be evaluated:",
@@ -217,92 +209,64 @@ mod_MixedModel_server <- function(input, output, session){
                          selected = unlist(choices_trait)[1])
       
       updateRadioButtons(session, "local",
-                         label="Choose the locations to be evaluated:",
-                         choices = choices_trait,
-                         selected = unlist(choices_trait)[1])
+                               label="Choose the locations to be evaluated:",
+                               choices = choices_locations)
       
       updateRadioButtons(session, "harve",
-                         label="Choose the harvest to be evaluated:",
-                         choices = choices_trait,
-                         selected = unlist(choices_trait)[1])
+                               label="Choose the harvest to be evaluated:",
+                               choices = choices_corte)
   })
   
   observe({
-    req(input$filter == "Yes")
-    choices_trait_temp <- colnames(button1())
-    #Choose the trait and the location
-    choices_trait <- choices_trait_temp
-    names(choices_trait) <- choices_trait_temp
+      req(input$read_data)
     
-    updateCheckboxGroupInput(session, "select",
-                       label="Choose the trait to be evaluated:",
-                       choices = choices_trait)
-    
-    # checkboxGroupInput(ns("select"), label = p("Choose the harvest to be evaluated:"),
-    #                    choices = "Press 'Read the file' button to update",
-    #                    selected = "Press 'Read the file' button to update")
+      choices_trait_temp <- colnames(button1())
+      choices_trait <- choices_trait_temp
+      names(choices_trait) <- choices_trait_temp
+      
+      updateRadioButtons(session, "fil",
+                         label="Choose the trait to be filtered:",
+                         choices = choices_trait)  
   })
   
   
-  observeEvent(input$read_data1, {
-    observeEvent(input$data_input, {
-      output$dynamic_filter_boxes <- renderUI({
-        req(input$filter == "Yes"
-            # , data()
-            )
-        dat <- button1()
-        
-        if (ncol(dat) > 0) {
-          n <- ncol(dat)
-          # print(str(dat))
-          for (i in 1:n) {
-            if (colnames(dat)[i] == input$trait) {
-              dat[, i] <- as.double(dat[, i])
-            } else {
-              dat[, i] <- as.factor(dat[, i])
-              # print(paste("Column", i, "converted to factor"))
-            }
-          }
-        } 
-        
-        num_cols <- ncol(dat)
-        col_names <- colnames(dat)
-        
-        lapply(seq_len(num_cols), function(i) {
-          if(is.factor(dat[[i]])) {
-          box(
-            width = 4,
-            checkboxGroupInput(
-              ns(paste0("filter", i)), 
-              label = paste("Select data from", col_names[i], ":"),
-              choices = unique(dat[[i]]),
-              selected = unique(dat[[i]])[1]
-            )
-          )
-          }
-        })
-      })
-      
-      # # Filtered data output
-      # output$filtered_data <- renderTable({
-      #   req(input$filter == "Yes", data())
-      #   
-      #   filtered_data <- data()
-      #   
-      #   lapply(seq_len(ncol(filtered_data)), function(i) {
-      #     filter_values <- input[[paste0("filter", i)]]
-      #     if (!is.null(filter_values)) {
-      #       filtered_data <- filtered_data[filtered_data[[i]] %in% filter_values, ]
-      #     }
-      #   })
-      #   
-      #   filtered_data
-      # })
-    })
-  })  
   
-  # Dynamic filter boxes
   
+  
+  # # Dynamic filter boxes
+  # output$dynamic_filter_boxes <- renderUI({
+  #   req(input$filter == "Yes", data())
+  #   num_cols <- ncol(data())
+  #   col_names <- colnames(data())
+  #   
+  #   lapply(seq_len(num_cols), function(i) {
+  #     box(
+  #       width = 6,
+  #       checkboxGroupInput(
+  #         ns(paste0("filter", i)), 
+  #         label = paste("Select data from", col_names[i], ":"),
+  #         choices = unique(data()[[i]]),
+  #         selected = unique(data()[[i]])[1]
+  #       )
+  #     )
+  #   })
+  # })
+  # 
+  # # Filtered data output
+  # output$filtered_data <- renderTable({
+  #   req(input$filter == "Yes", data())
+  #   
+  #   filtered_data <- data()
+  #   
+  #   lapply(seq_len(ncol(filtered_data)), function(i) {
+  #     filter_values <- input[[paste0("filter", i)]]
+  #     if (!is.null(filter_values)) {
+  #       filtered_data <- filtered_data[filtered_data[[i]] %in% filter_values, ]
+  #     }
+  #   })
+  #   
+  #   filtered_data
+  # })
   
   # # Filter and select necessary columns
   # dados_fil <- dados %>%
