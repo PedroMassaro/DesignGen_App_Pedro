@@ -242,22 +242,6 @@ mod_MixedModel_server <- function(input, output, session){
     })
   })
   
-  # observeEvent(input$filter_data, {
-  #   num <- length(input$select)
-  #   col_names <- input$select
-  # 
-  #   data <- button1
-  #   
-  #   lapply(seq_len(num), function(i) {
-  #     data <- data %>%
-  #       filter(dat[[input$select[i]]] %in% c(input[[paste0("filter", i)]])) %>%
-  #       droplevels()
-  #   })
-  #   print(str(data))
-  #   # print(input[[paste0("filter", 1)]])
-  #   # print(input$filter1)
-  # })
-  
   button3 <- eventReactive(input$filter_data, {
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
@@ -280,149 +264,66 @@ mod_MixedModel_server <- function(input, output, session){
             filter(data[[input$select[i]]] %in% c(input[[paste0("filter", i)]])) %>%
             droplevels()
         }
-        # print(str(data))
-        # print(input[[paste0("filter", 1)]])
-        # print(input$filter1)
- 
-      
+
       incProgress(0.25, detail = paste("Doing part", 2))
       data
     })
   })
-  
+
   observeEvent(input$filter_data, {
-    print(str(button3()))
-    print(input[[paste0("filter", 1)]])
-    print(input$filter1)
-    print(input$select)
-  })
-  
-  observe({
-    #Generalizar
-      choices_trait_temp <- colnames(button1())
-      #Choose the trait and the location
-      choices_trait <- choices_trait_temp
-      names(choices_trait) <- choices_trait_temp
-      
-      updateRadioButtons(session, "trait",
-                         label="Choose the trait to be evaluated:",
-                         choices = choices_trait,
-                         selected = unlist(choices_trait)[1])
-      
-      updateRadioButtons(session, "local",
-                         label="Choose the locations to be evaluated:",
-                         choices = choices_trait,
-                         selected = unlist(choices_trait)[1])
-      
-      updateRadioButtons(session, "harve",
-                         label="Choose the harvest to be evaluated:",
-                         choices = choices_trait,
-                         selected = unlist(choices_trait)[1])
+    choices_trait_temp <- colnames(button1())
+    choices_trait <- choices_trait_temp
+    names(choices_trait) <- choices_trait_temp
+    
+    updateRadioButtons(session, "trait",
+                       label="Choose the trait to be evaluated:",
+                       choices = choices_trait,
+                       selected = unlist(choices_trait)[1])
+    
+    updateRadioButtons(session, "local",
+                       label="Choose the locations to be evaluated:",
+                       choices = choices_trait)
+    
+    updateRadioButtons(session, "harve",
+                       label="Choose the harvest to be evaluated:",
+                       choices = choices_trait)
   })
 
   # defining the model as a factor
   button2 <- eventReactive(input$run_analysis, {
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
-      dat <- button1()
-      # dat$Bloco <- as.factor(dat$Bloco)
-      # dat$Genotipo <- as.factor(dat$Genotipo)
-      # dat$Local <- as.factor(dat$Local)
-      # dat$Corte <- as.factor(dat$Corte)
-      # dat$Peso <- as.double(dat$Peso)
-      # dat <- as.data.frame(dat)
-      # dat[[input$trait]] <- as.double(dat[[input$trait]])
-      # dat[[input$local]] <- as.factor(dat[[input$local]])
-      # dat[[input$harve]] <- as.factor(dat[[input$harve]])
-      # 
-      # Ensure 'dados_fil' is a data frame and has columns
-      # if (ncol(dat) > 0) {
-      #   n <- ncol(dat)
-      #   print(str(dat))
-      #   for (i in 1:n) {
-      #     if (!is.data.frame(dat[, i])) {
-      #       if (names(dat[, i]) == input$trait) {
-      #         dat[, i] <- as.double(dat[, i])
-      #       } else {
-      #         dat[, i] <- as.factor(dat[, i])
-      #         print(paste("Column", i, "converted to factor"))
-      #       }
-      #     } else {
-      #       print(paste("Column", i, "is a data frame and was not converted"))
-      #     }
-      #   }
-      # } else {
-      #   stop("dados_fil is not a data frame or has no columns")
-      # }
+      dat <- button3()
       
       if (ncol(dat) > 0) {
         n <- ncol(dat)
-        print(str(dat))
         for (i in 1:n) {
           if (colnames(dat)[i] == input$trait) {
             dat[, i] <- as.double(dat[, i])
           } else {
             dat[, i] <- as.factor(dat[, i])
-            # print(paste("Column", i, "converted to factor"))
           }
         }
       } 
-      # else {
-      #   stop("dados_fil is not a data frame or has no columns")
-      # }
-      print(str(dat))
       
-      # if (is.data.frame(dat) && ncol(dat) > 0) {
-      #   n <- ncol(dados_fil)
-      #   for (i in 1:n) {
-      #     if (names(dados_fil[, i]) == input$trait) {
-      #       dados_fil[, i] <- as.double(dados_fil[, i])
-      #     } else {
-      #       dados_fil[, i] <- as.factor(dados_fil[, i])
-      #       print(paste("Column", i, "converted to factor")) 
-      #     }
-      #   }
-      # } else {
-      #   stop("dados_fil is not a data frame or has no columns")
-      # }
-      
-      
-      if(input$design == "block"){
-        if(!all(c("local", "block", "gen") %in% colnames(dat)) | ("rep" %in% colnames(dat)))
-          stop(safeError("Randomized complete block design should have columns 'local', 'block' and 'gen'."))
-        dat <- dat %>% select(c(input$local, "gen", "block", input$corte, input$trait)) %>%
-          droplevels() 
-      } 
-      if(input$design == "alpha"){
-        if(!all(c("local", "block", "gen", "rep") %in% colnames(dat)))
-          stop(safeError("Alpha lattice design should have columns 'local', 'block', 'rep', and 'gen'."))
-        dat$rep <- as.factor(dat$rep)
-        dat <- dat %>% select(c(input$local, "gen", "block", input$corte, input$trait)) %>%
-          droplevels() 
-      } 
-      if(input$design == "split"){
-        # if(!all(c("local", "block", "gen", "corte") %in% colnames(dat)))
-        #   stop(safeError("Split-plot design should have columns 'local', 'corte' and 'gen'."))
-        # dat$input$trait <- as.double(dat$input$trait)
-        dat <- dat %>% 
-          # select(c("Local", "Genotipo", "Bloco", "Corte", input$trait)) %>%
-          filter(Local %in% input$local) %>% 
-          filter(Corte %in% c(input$harve)) %>% droplevels()
-        
-      } 
-      
-      # else {
-      #   if(!all(c("local", "block", "gen", "corte") %in% colnames(dat)))
+      # if(input$design == "block"){
+      #   if(!all(c("local", "block", "gen") %in% colnames(dat)) | ("rep" %in% colnames(dat)))
+      #     stop(safeError("Randomized complete block design should have columns 'local', 'block' and 'gen'."))
+      #   dat <- dat %>% select(c(input$local, "gen", "block", input$corte, input$trait)) %>%
+      #     droplevels() 
+      # } 
+      # if(input$design == "alpha"){
+      #   if(!all(c("local", "block", "gen", "rep") %in% colnames(dat)))
       #     stop(safeError("Alpha lattice design should have columns 'local', 'block', 'rep', and 'gen'."))
       #   dat$rep <- as.factor(dat$rep)
-      #   
-      #   dat <- dat %>% select(c("local", "gen", "block","corte",input$trait)) %>%
-      #     filter(local %in% input$local) %>% droplevels() #%>% 
-      #   # filter(corte %in% input$corte) %>% droplevels()
-      #   
-      #   dat$local <- as.factor(dat$rep)
-      #   #dat$corte <- as.factor(dat$rep)
-      # }
+      #   dat <- dat %>% select(c(input$local, "gen", "block", input$corte, input$trait)) %>%
+      #     droplevels() 
+      # } 
+      # if(input$design == "split"){
+      #   dat <- dat %>% 
+      #     filter(Local %in% input$local) %>% 
+      #     filter(Corte %in% c(input$harve)) %>% droplevels()
+      # } 
       
       if(!is.null(input$pedigree)) A <- read.csv(input$pedigree$datapath, row.names = 1, header = T)
       
