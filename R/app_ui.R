@@ -20,15 +20,12 @@ app_ui <- function(request) {
           menuItem("Single environment", tabName = "single", 
                    menuSubItem("Assumptions test", tabName = "assumptionsTest", icon = icon("minus")),
                    menuSubItem("Selection indices", tabName = "indices", icon = icon("minus"))
-                   # ,
-                   # menuSubItem("DIC", tabName = "dic", icon = icon("minus"))
           ),
           menuItem("Multi environment", tabName = "multi", 
                    #menuSubItem("Assumptions test", tabName = "METassumptionsTest", icon = icon("crosshairs")),
                    menuSubItem("Selection indices", tabName = "METindices", icon = icon("minus")),
                    menuSubItem("Stability analysis", tabName = "MET_metan", icon = icon("minus")),
-                   menuSubItem("Mixed models", tabName = "mixedModel", icon = icon("minus")),
-                   menuSubItem("Mixed models 1", tabName = "mixedModel1", icon = icon("minus"))
+                   menuSubItem("Mixed models", tabName = "mixedModel", icon = icon("minus"))
           ),
           # New menuItem 
           menuItem("Statistical analysis", tabName = "Stat", 
@@ -130,10 +127,6 @@ app_ui <- function(request) {
           tabItem(tabName = "indices",
                   mod_indices_ui("indices_ui_1")
           ),
-          # Ver sobre isso!!!
-          # tabItem(tabName = "dic",
-          #         mod_dic_ui("dic_ui_1") #Pelo amor de Deus, da onde saiu isso!!!
-          # ),
           # tabItem(tabName = "METassumptionsTest",
           #         mod_METassumptionsTest_ui("METassumptionsTest_ui_1")
           # ),
@@ -145,9 +138,6 @@ app_ui <- function(request) {
           ),
           tabItem(tabName = "mixedModel",
                   mod_MixedModel_ui("MixedModel_ui_1")
-          ),
-          tabItem(tabName = "mixedModel1",
-                  mod_MixedModel1_ui("MixedModel1_ui_1")
           ),
           # Third tab
           tabItem(tabName = "DIC",
