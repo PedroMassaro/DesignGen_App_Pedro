@@ -54,12 +54,12 @@ mod_MixedModel_ui <- function(id){
              ),
              
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status = "primary", title = "Data Filtering",
-                 box(width = 6,
+                 box(width = 12,
                      radioButtons(ns("filter"), label = p("Would you like to filter your data?"),
                                   choices = c("Yes", "No"),
                                   selected = "No"),
                  ),
-                 box(width = 6,
+                 box(width = 12,
                      checkboxGroupInput(ns("select"), label = p("Choose the harvest to be evaluated:"),
                                         choices = "Press 'Read the file' button to update",
                                         selected = "Press 'Read the file' button to update")
@@ -91,7 +91,9 @@ mod_MixedModel_ui <- function(id){
                      radioButtons(ns("harve"), label = p("Choose the harvest to be evaluated:"),
                                         choices = "Press 'Read the file' button to update",
                                         selected = "Press 'Read the file' button to update")
-                 )
+                 ),
+                 hr(),
+                 actionButton(ns("select_data"), "Finish",icon("refresh"))
              ),
              
              
@@ -231,7 +233,7 @@ mod_MixedModel_server <- function(input, output, session){
         lapply(seq_len(num), function(i) {
           if(is.factor(dat[[input$select[i]]])) {
             box(
-              width = 4,
+              width = 12,
               checkboxGroupInput(
                 ns(paste0("filter", i)),
                 label = paste("Select data from", col_names[i], ":"),
@@ -294,6 +296,7 @@ mod_MixedModel_server <- function(input, output, session){
 
   # defining the model as a factor
   button2 <- eventReactive(input$run_analysis, {
+    req(input$select_data)
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
       dat <- button3()
@@ -308,25 +311,6 @@ mod_MixedModel_server <- function(input, output, session){
           }
         }
       } 
-      
-      # if(input$design == "block"){
-      #   if(!all(c("local", "block", "gen") %in% colnames(dat)) | ("rep" %in% colnames(dat)))
-      #     stop(safeError("Randomized complete block design should have columns 'local', 'block' and 'gen'."))
-      #   dat <- dat %>% select(c(input$local, "gen", "block", input$corte, input$trait)) %>%
-      #     droplevels() 
-      # } 
-      # if(input$design == "alpha"){
-      #   if(!all(c("local", "block", "gen", "rep") %in% colnames(dat)))
-      #     stop(safeError("Alpha lattice design should have columns 'local', 'block', 'rep', and 'gen'."))
-      #   dat$rep <- as.factor(dat$rep)
-      #   dat <- dat %>% select(c(input$local, "gen", "block", input$corte, input$trait)) %>%
-      #     droplevels() 
-      # } 
-      # if(input$design == "split"){
-      #   dat <- dat %>% 
-      #     filter(Local %in% input$local) %>% 
-      #     filter(Corte %in% c(input$harve)) %>% droplevels()
-      # } 
       
       if(!is.null(input$pedigree)) A <- read.csv(input$pedigree$datapath, row.names = 1, header = T)
       
