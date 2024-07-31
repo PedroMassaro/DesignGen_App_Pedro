@@ -121,6 +121,9 @@ mod_MixedModel_ui <- function(id){
                  box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "BLUPs",
                      DT::dataTableOutput(ns("blups_out"))
                  ),
+                 box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Download .RData",
+                     actionButton(ns("saveRData"), "Save .RData file")
+                 )
              )
     )
   )
@@ -413,6 +416,12 @@ mod_MixedModel_server <- function(input, output, session){
                     columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centraliza o texto de todas as colunas
                   ),
                   class = "display")
+  })
+  
+  observeEvent(input$saveRData, {
+    savedata <- button2()[[1]]
+    save(savedata, file = paste0(getwd(), "/Mixedmodel.RData"))
+    showNotification(paste("Message", "Data Has been saved"), duration = NULL)
   })
 }
 
