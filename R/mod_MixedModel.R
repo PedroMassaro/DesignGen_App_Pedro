@@ -129,7 +129,8 @@ mod_MixedModel_ui <- function(id){
                      ),
                  ),
                  box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Download .RData",
-                     actionButton(ns("saveRData"), "Save .RData file")
+                     actionButton(ns("saveRData"), "Save .RData file"),
+                     downloadButton(ns('bn_download'), "Download", class = "butt")
                  )
              )
     )
@@ -424,6 +425,39 @@ mod_MixedModel_server <- function(input, output, session){
             axis.text.x = element_text(angle = 90, hjust = 1, size = 12),
             axis.text.y = element_text(size = 12))
   })
+  
+  fn_downloadname <- reactive({
+    seed <- sample(1:1000,1)
+    filename <- paste0("profile","_",seed,".RData")
+    return(filename)
+  })
+  
+  
+  # download profile 
+  fn_download <- function() {
+    savedata <- button2()[[1]]
+    save(savedata, file = fn_downloadname())
+  }
+  
+  # observe({
+  #   if (!is.null(loadQTL()) & input$width_profile > 1 & input$height_profile > 1 & input$dpi_profile > 1) {
+  #     Sys.sleep(1)
+  #     # enable the download button
+  #     shinyjs::enable("bn_download")
+  #   } else {
+  #     shinyjs::disable("bn_download")
+  #   }
+  # })
+  
+  # download handler
+  output$bn_download <- downloadHandler(
+    filename = fn_downloadname,
+    content = function(file) {
+      fn_download()
+      file.copy(fn_downloadname(), file, overwrite=T)
+      file.remove(fn_downloadname())
+    }
+  )
   
   observeEvent(input$saveRData, {
     savedata <- button2()[[1]]
