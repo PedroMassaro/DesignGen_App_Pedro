@@ -24,14 +24,16 @@ app_ui <- function(request) {
           menuItem("Multi environment", tabName = "multi", 
                    #menuSubItem("Assumptions test", tabName = "METassumptionsTest", icon = icon("crosshairs")),
                    menuSubItem("Selection indices", tabName = "METindices", icon = icon("minus")),
-                   menuSubItem("Stability analysis", tabName = "MET_metan", icon = icon("minus")),
-                   menuSubItem("Mixed models", tabName = "mixedModel", icon = icon("minus"))
+                   menuSubItem("Stability analysis", tabName = "MET_metan", icon = icon("minus"))
           ),
           # New menuItem 
-          menuItem("Statistical analysis", tabName = "Stat", 
+          menuItem("Fixed Models", tabName = "fixed", 
                    menuSubItem("Completely randomized design", tabName = "DIC", icon = icon("minus")),
                    menuSubItem("Randomized block design", tabName = "DBC", icon = icon("minus")),
                    menuSubItem("Split plot design", tabName = "parc_sub", icon = icon("minus"))
+          ),
+          menuItem("Mixed Models", tabName = "mixedModel"
+                   # , icon = icon("minus")
           ),
           tags$li(class = "dropdown",
                   tags$a(href="https://statgen-esalq.github.io/", target="_blank", 
