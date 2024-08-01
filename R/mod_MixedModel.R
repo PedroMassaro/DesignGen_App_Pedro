@@ -121,7 +121,12 @@ mod_MixedModel_ui <- function(id){
                      DT::dataTableOutput(ns("aic_bic_out"))
                  ),
                  box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "BLUPs",
-                     DT::dataTableOutput(ns("blups_out"))
+                     box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Residuals vs fitted values",
+                         DT::dataTableOutput(ns("blups_out")),
+                     ),
+                     box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "BLUP by Genotype",
+                         plotOutput(ns("plot_blups")),
+                     ),
                  ),
                  box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Download .RData",
                      actionButton(ns("saveRData"), "Save .RData file")
@@ -400,6 +405,24 @@ mod_MixedModel_server <- function(input, output, session){
                     columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centraliza o texto de todas as colunas
                   ),
                   class = "display")
+  })
+  
+  output$plot_blups <- renderPlot({
+    data <- data.frame(button2()[[4]])
+    data[,1] <- as.factor(data[,1])
+    data[,2] <- as.numeric(data[,2])
+    # Plot the data and analyze the BLUP.
+    ggplot(data, 
+           aes(x = data[,1], y = data[,2])) +
+      geom_point(color = "#cc662f", size = 2) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+      labs(x = "Genotipo",
+           y = "BLUP") +
+      theme_minimal() +
+      theme(axis.title.x = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.text.x = element_text(angle = 90, hjust = 1, size = 12),
+            axis.text.y = element_text(size = 12))
   })
   
   observeEvent(input$saveRData, {
