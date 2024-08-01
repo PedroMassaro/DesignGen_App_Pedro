@@ -129,7 +129,6 @@ mod_MixedModel_ui <- function(id){
                      ),
                  ),
                  box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Download .RData",
-                     actionButton(ns("saveRData"), "Save .RData file"),
                      downloadButton(ns('bn_download'), "Download", class = "butt")
                  )
              )
@@ -415,7 +414,7 @@ mod_MixedModel_server <- function(input, output, session){
     # Plot the data and analyze the BLUP.
     ggplot(data, 
            aes(x = data[,1], y = data[,2])) +
-      geom_point(color = "#cc662f", size = 2) +
+      geom_point(color = "#cc662f", size = 4) +
       geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
       labs(x = "Genotipo",
            y = "BLUP") +
@@ -427,27 +426,16 @@ mod_MixedModel_server <- function(input, output, session){
   })
   
   fn_downloadname <- reactive({
-    seed <- sample(1:1000,1)
-    filename <- paste0("profile","_",seed,".RData")
+    seed <- sample(1:10,1)
+    filename <- paste0("mixedmodel","_",seed,".RData")
     return(filename)
   })
   
-  
   # download profile 
   fn_download <- function() {
-    savedata <- button2()[[1]]
-    save(savedata, file = fn_downloadname())
+    mixedmodel <- button2()[[1]]
+    save(mixedmodel, file = fn_downloadname())
   }
-  
-  # observe({
-  #   if (!is.null(loadQTL()) & input$width_profile > 1 & input$height_profile > 1 & input$dpi_profile > 1) {
-  #     Sys.sleep(1)
-  #     # enable the download button
-  #     shinyjs::enable("bn_download")
-  #   } else {
-  #     shinyjs::disable("bn_download")
-  #   }
-  # })
   
   # download handler
   output$bn_download <- downloadHandler(
@@ -458,12 +446,6 @@ mod_MixedModel_server <- function(input, output, session){
       file.remove(fn_downloadname())
     }
   )
-  
-  observeEvent(input$saveRData, {
-    savedata <- button2()[[1]]
-    save(savedata, file = paste0(getwd(), "/Mixedmodel.RData"))
-    showNotification(paste("Message", "Data Has been saved"), duration = NULL)
-  })
 }
 
 ## To be copied in the UI
