@@ -12,45 +12,33 @@
 mod_MixedModel_ui <- function(id){ 
   ns <- NS(id)
   tagList(
-    fluidRow(style = "height:5000px",
+    fluidRow(style = "height:8000px",
              box(width = 12, 
                  p("Run analysis with mixed models")
              ),
              
-             # Choose the experiment design
-             box(width = 12,
-                 selectInput(ns("design"), label = h4("Experiment design"), 
-                             choices = list("Randomized complete block" = "block", "Split-plot design" = "split", "Alpha lattice" = "lattice"), 
-                             selected = "split")
-             ),
-             
              # Input the file
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Input file",
-                 p("The input file is a tab delimited table with a column called 'local' defining the environment, 
-                   other called 'gen' defining the genotypes, other called 'harve' defining harvests and other called 'block' defining the block number. 
-                   The adjusted phenotypic means should be included in extra columns. Download here an input file example:"),
+                 p("If you don't have any data, you can download an example input file here to see how the app works."),
                  downloadButton(ns("data_example")), hr(),
-                 p("Upload here your file:"),
-                 fileInput(ns("data_input"), label = h6("File: data.txt"), multiple = F),
-                 p("If you do not have an file to be upload you can still check this app features with our example file. The example file is automatically upload, you just need to procedure to the other buttons."),
+                 p("Upload your file here:"),
+                 fileInput(ns("data_input"), label = h6("File: .csv .xls .txt"), multiple = F),
+                 p("If you don't have a file to upload, you can still explore the app's features using our example file.
+                   The example file will be automatically uploaded, simply press the 'Load the file' button to proceed."),
                  
                  #Input Control
                  hr(),
-                 p("Data View:"),
                  box(width = 4,
-                     radioButtons(ns("read_data1"), label = p("Select o separator"),
+                     radioButtons(ns("read_data1"), label = p("Choose the separator:"),
                                   choices = list("Comma" = ",", "Semicolon" = ";", "Tab" = "\t"),
                                   selected = ",") 
                  ), 
                  box(width = 8,  
-                     #title = "Database",
-                     #data visualisation
                      tableOutput(ns("dataview"))
                  ),
                  # Read the file
                  hr(),
-                 actionButton(ns("read_data"), "Read the file",icon("refresh")), 
-                 hr(),
+                 actionButton(ns("read_data"), "Load the file", icon("fa-solid fa-file")), 
              ),
              
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status = "primary", title = "Data Filtering",
@@ -58,21 +46,17 @@ mod_MixedModel_ui <- function(id){
                      radioButtons(ns("filter"), label = p("Would you like to filter your data?"),
                                   choices = c("Yes", "No"),
                                   selected = "No"),
-                 ),
-                 box(width = 12,
+                     hr(),
                      checkboxGroupInput(ns("select"), label = p("Choose the harvest to be evaluated:"),
                                         choices = "Press 'Read the file' button to update",
-                                        selected = "Press 'Read the file' button to update")
+                                        selected = "Press 'Read the file' button to update"),
+                     hr(),
+                     actionButton(ns("filter_read"), "Filter the file",icon("refresh")), 
                  ),
-                 
-                 hr(),
-                 actionButton(ns("filter_read"), "Filter the file",icon("refresh")), 
-                 
                  hr(),
                  uiOutput(ns("dynamic_filter_boxes")),
-                 
-                 hr(),
-                 actionButton(ns("filter_data"), "Finish",icon("refresh"))
+                 hr(), br(),
+                     actionButton(ns("filter_data"), "Finish",icon("refresh"))
              ),
              
              #Select variables
@@ -84,13 +68,13 @@ mod_MixedModel_ui <- function(id){
                  ),
                  box(width = 4,
                      radioButtons(ns("local"), label = p("Choose the location to be evaluated:"),
-                                        choices = "Press 'Read the file' button to update",
-                                        selected = "Press 'Read the file' button to update")
+                                  choices = "Press 'Read the file' button to update",
+                                  selected = "Press 'Read the file' button to update")
                  ),
                  box(width = 4,
                      radioButtons(ns("harve"), label = p("Choose the harvest to be evaluated:"),
-                                        choices = "Press 'Read the file' button to update",
-                                        selected = "Press 'Read the file' button to update")
+                                  choices = "Press 'Read the file' button to update",
+                                  selected = "Press 'Read the file' button to update")
                  ),
                  hr(),
                  actionButton(ns("select_data"), "Finish",icon("refresh"))
@@ -128,9 +112,8 @@ mod_MixedModel_ui <- function(id){
                          plotOutput(ns("plot_blups")),
                      ),
                  ),
-                 box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Download .RData",
-                     downloadButton(ns('bn_download'), "Download", class = "butt")
-                 )
+                 hr(),
+                 downloadButton(ns('bn_download'), "Download .RData", class = "butt")
              )
     )
   )
@@ -152,11 +135,7 @@ mod_MixedModel_server <- function(input, output, session){
     },
     # content is a function with argument file. content writes the plot to the device
     content = function(file) {
-      if(input$design == "block"){
-        dat <- read.csv(system.file("ext","example_inputs/example_blocks.csv", package = "StatGenESALQ"))
-      } else {
-        dat <- read.csv(system.file("ext","example_inputs/example_lattice.csv", package = "StatGenESALQ"))
-      }
+      dat <- read.csv(system.file("ext","example_inputs/example_blocks.csv", package = "StatGenESALQ"))
       write.csv(dat, file = file, row.names = F)
     } 
   )
@@ -193,11 +172,7 @@ mod_MixedModel_server <- function(input, output, session){
   #Corrigir isso!!!
   button1 <- eventReactive(input$read_data, {
     if (is.null(input$data_input$datapath)) {
-      if(input$design == "block"){
         dat <- read.csv(system.file("ext","example_inputs/example_blocks.csv", package = "StatGenESALQ"))
-      } else {
-        dat <- read.csv(system.file("ext","example_inputs/example_lattice.csv", package = "StatGenESALQ"))
-      }
     } else {
       dat <- read.csv(input$data_input$datapath, sep = input$read_data1)
     }
@@ -222,13 +197,11 @@ mod_MixedModel_server <- function(input, output, session){
       output$dynamic_filter_boxes <- renderUI({
         req(input$filter == "Yes")
         dat <- button1()
-        print(input$select[1])
-        
+
         if (length(input$select) > 0) {
           n <- length(input$select)
-          # print(str(dat))
           for (i in 1:n) {
-              dat[[input$select[i]]] <- as.factor(dat[[input$select[i]]])
+            dat[[input$select[i]]] <- as.factor(dat[[input$select[i]]])
           }
         } 
         
@@ -259,27 +232,27 @@ mod_MixedModel_server <- function(input, output, session){
       data <- button1()
       
       if (length(input$select) > 0) {
-          n <- length(input$select)
-          # print(str(dat))
-          for (i in 1:n) {
-              data[[input$select[i]]] <- as.factor(data[[input$select[i]]])
-          }
-        } 
-      
-        num <- length(input$select)
-        col_names <- input$select
-       
-        for (i in 1:num) {
-          data <- data %>%
-            filter(data[[input$select[i]]] %in% c(input[[paste0("filter", i)]])) %>%
-            droplevels()
+        n <- length(input$select)
+        # print(str(dat))
+        for (i in 1:n) {
+          data[[input$select[i]]] <- as.factor(data[[input$select[i]]])
         }
-
+      } 
+      
+      num <- length(input$select)
+      col_names <- input$select
+      
+      for (i in 1:num) {
+        data <- data %>%
+          filter(data[[input$select[i]]] %in% c(input[[paste0("filter", i)]])) %>%
+          droplevels()
+      }
+      
       incProgress(0.25, detail = paste("Doing part", 2))
       data
     })
   })
-
+  
   observeEvent(input$filter_data, {
     choices_trait_temp <- colnames(button1())
     choices_trait <- choices_trait_temp
@@ -298,10 +271,9 @@ mod_MixedModel_server <- function(input, output, session){
                        label="Choose the harvest to be evaluated:",
                        choices = choices_trait)
   })
-
+  
   # defining the model as a factor
   button2 <- eventReactive(input$run_analysis, {
-    req(input$select_data)
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
       dat <- button3()
@@ -394,7 +366,7 @@ mod_MixedModel_server <- function(input, output, session){
     for (col in 2) {
       data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
     }
-
+    
     # Outputs
     DT::datatable(data,
                   rownames = FALSE,
@@ -414,7 +386,7 @@ mod_MixedModel_server <- function(input, output, session){
     # Plot the data and analyze the BLUP.
     ggplot(data, 
            aes(x = data[,1], y = data[,2])) +
-      geom_point(color = "#cc662f", size = 4) +
+      geom_point(color = "#cc662f", size = 3) +
       geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
       labs(x = "Genotipo",
            y = "BLUP") +
