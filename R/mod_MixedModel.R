@@ -29,7 +29,7 @@ mod_MixedModel_ui <- function(id){
                  # Input Control
                  hr(),
                  box(width = 4,
-                     radioButtons(ns("read_data1"), label = p("Choose the separator:"),
+                     radioButtons(ns("data_view"), label = p("Choose the separator:"),
                                   choices = list("Comma" = ",", "Semicolon" = ";", "Tab" = "\t"),
                                   selected = ",") 
                  ), 
@@ -39,7 +39,7 @@ mod_MixedModel_ui <- function(id){
                  
                  # Read the file
                  hr(),
-                 actionButton(ns("read_data"), "Load file", icon("file")), 
+                 actionButton(ns("data_load"), "Load file", icon("file")), 
              ),
              
              # Data Filtering
@@ -60,7 +60,7 @@ mod_MixedModel_ui <- function(id){
                  actionButton(ns("filter_data"), "Data Filters", icon("filter"))
              ),
              
-             #Select variables
+             # Choose Parameters
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Select variables",
                  box(width = 4,
                      radioButtons(ns("trait"), label = p("Choose the trait to be evaluated:"),
@@ -82,7 +82,7 @@ mod_MixedModel_ui <- function(id){
              ),
              
              
-             #Define the model
+             # Define the model
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Define the model:",
                  p("If you want to consider a pedigree matrix, please submit an csv file as the example:"),
                  downloadButton(ns("pedigree_example")), hr(),
@@ -114,6 +114,7 @@ mod_MixedModel_ui <- function(id){
                      ),
                  ),
                  hr(),
+                 # Download
                  downloadButton(ns('bn_download'), "Download .RData", class = "butt")
              )
     )
@@ -129,27 +130,28 @@ mod_MixedModel_ui <- function(id){
 # server part ----
 mod_MixedModel_server <- function(input, output, session){
   ns <- session$ns
-  ## download input
+  
+  ## Download input
   output$data_example <- downloadHandler(
     filename =  function() {
       paste("example_data.csv")
     },
-    # content is a function with argument file. content writes the plot to the device
+    # Content is a function with argument file. content writes the plot to the device
     content = function(file) {
       dat <- read.csv(system.file("ext","example_inputs/example_blocks.csv", package = "StatGenESALQ"))
       write.csv(dat, file = file, row.names = F)
     } 
   )
   
-  # Data processing using .txt and .csv files.
-  observeEvent(input$read_data1, {
+  # Observe the file input and display the data
+  observeEvent(input$data_view, {
     observeEvent(input$data_input, {
       if (is.null(input$data_input)) {
         output$dataview <- renderTable({
           return(p("Upload your data"))
         })
       } else {
-        df <- read.csv(input$data_input$datapath, sep = input$read_data1)
+        df <- read.csv(input$data_input$datapath, sep = input$data_view)
         output$dataview <- renderTable({
           return(head(df))
         })
@@ -157,31 +159,30 @@ mod_MixedModel_server <- function(input, output, session){
     })
   })  
   
-  
-  ## download pedigree
+  # Download example pedigree data
   output$pedigree_example <- downloadHandler(
     filename =  function() {
       paste("pedigree.csv")
     },
-    # content is a function with argument file. content writes the plot to the device
+    # Content is a function with argument file. content writes the plot to the device
     content = function(file) {
       dat <- read.csv(system.file("ext","example_inputs/example_pedigree.csv", package = "StatGenESALQ"), row.names = 1, header = T)
       write.csv(dat, file = file)
     } 
   )
   
-  #Corrigir isso!!!
-  button1 <- eventReactive(input$read_data, {
+  # Data Loading
+  button1 <- eventReactive(input$data_load, {
     if (is.null(input$data_input$datapath)) {
       dat <- read.csv(system.file("ext","example_inputs/example_blocks.csv", package = "StatGenESALQ"))
     } else {
-      dat <- read.csv(input$data_input$datapath, sep = input$read_data1)
+      dat <- read.csv(input$data_input$datapath, sep = input$data_view)
     }
-    # cat(colnames(dat))
     dat
   })
   
-  observeEvent(input$read_data, {
+  # Dynamic UI for filtering data
+  observeEvent(input$data_load, {
       output$dynamic_filter_select <- renderUI({
         req(input$filter == "Yes")
         choices_trait_temp <- colnames(button1())
@@ -205,7 +206,7 @@ mod_MixedModel_server <- function(input, output, session){
     })
   })
   
-  observeEvent(input$read_data, {
+  observeEvent(input$data_load, {
     output$dynamic_filter_select2 <- renderUI({
       req(input$filter == "Yes")
       dat <- button1()
@@ -217,8 +218,8 @@ mod_MixedModel_server <- function(input, output, session){
     })
   })
   
-
-  observeEvent(input$read_data, {
+  # Reactive filter data
+  observeEvent(input$data_load, {
       output$dynamic_filter_boxes <- renderUI({
         req(input$filter == "Yes")
         dat <- button1()
@@ -278,6 +279,7 @@ mod_MixedModel_server <- function(input, output, session){
         })
       })
 
+  # Data Filtering
   button3 <- eventReactive(input$filter_data, {
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
@@ -304,7 +306,8 @@ mod_MixedModel_server <- function(input, output, session){
       data
     })
   })
-  
+
+  # Update choices for analysis
   observeEvent(input$filter_data, {
     choices_trait_temp <- colnames(button1())
     choices_trait <- choices_trait_temp
@@ -324,7 +327,7 @@ mod_MixedModel_server <- function(input, output, session){
                        choices = choices_trait)
   })
   
-  # defining the model as a factor
+  # Analysis function
   button2 <- eventReactive(input$run_analysis, {
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
@@ -363,7 +366,8 @@ mod_MixedModel_server <- function(input, output, session){
       list(mod,summary_mod, aic_bic, BLUPs)
     })
   })
-  
+
+  # Output for variance components
   output$varcomp_out <- DT::renderDataTable({
     data <- data.frame(button2()[[2]]$varcomp)
     
@@ -385,6 +389,7 @@ mod_MixedModel_server <- function(input, output, session){
                   class = "display")
   })
   
+  # Output for AIC and BIC
   output$aic_bic_out <- DT::renderDataTable({
     data <- data.frame(button2()[[3]])
     
@@ -408,6 +413,7 @@ mod_MixedModel_server <- function(input, output, session){
                   class = "display")
   })
   
+  # Output for BLUPs - Table
   output$blups_out <- DT::renderDataTable({
     data <- data.frame(button2()[[4]])
     
@@ -431,6 +437,7 @@ mod_MixedModel_server <- function(input, output, session){
                   class = "display")
   })
   
+  # Output for BLUPs - Graph
   output$plot_blups <- renderPlot({
     data <- data.frame(button2()[[4]])
     data[,1] <- as.factor(data[,1])
@@ -448,6 +455,7 @@ mod_MixedModel_server <- function(input, output, session){
             axis.text.y = element_text(size = 12))
   })
   
+  # Download results
   fn_downloadname <- reactive({
     seed <- sample(1:10,1)
     filename <- paste0("mixedmodel","_",seed,".RData")
