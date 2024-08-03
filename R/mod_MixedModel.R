@@ -39,16 +39,18 @@ mod_MixedModel_ui <- function(id){
                  
                  # Read the file
                  hr(),
-                 actionButton(ns("data_load"), "Load file", icon("file")), 
+                 actionButton(ns("data_load"), "Load file", icon("file")),
+                 br(),
+                 h6("Click here to proceed to the next step")
              ),
              
              # Data Filtering
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status = "primary", title = "Data Filtering",
                  box(width = 12,
-                 radioButtons(ns("filter_choice"), label = p("Do you need to filter your data?"),
-                              choices = c("Yes", "No"),
-                              selected = "No"),
-                 p("If you don't need to filter your data, just press the 'Data Filters' button and continue with the next steps.")
+                     radioButtons(ns("filter_choice"), label = p("Do you need to filter your data?"),
+                                  choices = c("Yes", "No"),
+                                  selected = "No"),
+                     p("If you don't need to filter your data, just press the 'Data Filters' button and continue with the next steps.")
                  ),
                  
                  uiOutput(ns("filter_dynamic_factor")),
@@ -57,15 +59,17 @@ mod_MixedModel_ui <- function(id){
                  br(),
                  uiOutput(ns("filter_dynamic_level")),
                  
-                 actionButton(ns("filter_ready"), "Data Filters", icon("filter"))
+                 actionButton(ns("filter_ready"), "Filter Data", icon("filter")),
+                 br(),
+                 h6("Click here to proceed to the next step")
              ),
              
              # Choose Parameters
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Select variables",
                  box(width = 4,
                      radioButtons(ns("trait"), label = p("Choose the trait to be evaluated:"),
-                                  choices = "Press 'Data Filters' button to update",
-                                  selected = "Press 'Data Filters' button to update"),
+                                  choices = "Press 'Filter Data' button to update",
+                                  selected = "Press 'Filter Data' button to update"),
                  ),
                  box(width = 4,
                      radioButtons(ns("fixed_ef"), label = p("Choose the fixed effect to be evaluated:"),
@@ -78,7 +82,9 @@ mod_MixedModel_ui <- function(id){
                                   selected = "Press 'Data Filters' button to update")
                  ),
                  hr(),
-                 actionButton(ns("parameter_choice"), "Model Parameters", icon("check"))
+                 actionButton(ns("parameter_choice"), "Model Parameters", icon("check")),
+                 br(),
+                 h6("Click here to proceed to the next step")
              ),
              
              
@@ -93,8 +99,9 @@ mod_MixedModel_ui <- function(id){
                  textInput(ns("fixed"), label = p("Fixed:"), value = "Peso ~ Corte + Corte:Bloco"),
                  textInput(ns("random"), label = p("Random:"), value = "~ Genotipo + Corte:Genotipo"),
                  textInput(ns("rcov"), label = p("rcov:"), value = "~ units"), hr(),
-                 actionButton(ns("analysis_run"), "Run analysis",icon("refresh")), br(),
-                 p("Expand the windows above to access the results")
+                 actionButton(ns("analysis_run"), "Run analysis",icon("refresh")), 
+                 br(),
+                 h6("Click here and expand the windows above to access the results")
              ), hr(),
              
              # Results
@@ -113,8 +120,8 @@ mod_MixedModel_ui <- function(id){
                          plotOutput(ns("blups_graph_out")),
                      ),
                  ),
-                 hr(),
                  # Download
+                 p("Click here to download the complete analysis data in .RData format"),
                  downloadButton(ns('download_rdata'), "Download .RData", class = "butt")
              )
     )
@@ -168,7 +175,7 @@ mod_MixedModel_server <- function(input, output, session){
     content = function(file) {
       dat <- read.csv(system.file("ext","example_inputs/example_pedigree.csv", package = "StatGenESALQ"), row.names = 1, header = T)
       write.csv(dat, file = file)
-    } 
+    }
   )
   
   # Data Loading
@@ -193,6 +200,7 @@ mod_MixedModel_server <- function(input, output, session){
                              selected = data_names[1])
       )
     })
+    showNotification("Data loaded")
   })
   
   observeEvent(input$data_load, {
@@ -200,7 +208,7 @@ mod_MixedModel_server <- function(input, output, session){
       req(input$filter_choice == "Yes")
       dat <- button1()
       
-        actionButton(ns("filter_in_process"), "Select levels", icon("plus"))
+      actionButton(ns("filter_in_process"), "Select levels", icon("plus"))
     })
   })
   
@@ -246,34 +254,28 @@ mod_MixedModel_server <- function(input, output, session){
       }
     })
   })
-
+  
   # Data Filtering
   button2 <- eventReactive(input$filter_ready, {
-    withProgress(message = 'Building graphic', value = 0, {
-      incProgress(0, detail = paste("Doing part", 1))
-      
-      dat <- button1()
-      if (length(input$factor) > 0) {
-        n <- length(input$factor)
-        for (i in 1:n) {
-          dat[[input$factor[i]]] <- as.factor(dat[[input$factor[i]]])
-        }
+    dat <- button1()
+    if (length(input$factor) > 0) {
+      n <- length(input$factor)
+      for (i in 1:n) {
+        dat[[input$factor[i]]] <- as.factor(dat[[input$factor[i]]])
       }
-      
-      num <- length(input$factor)
-      col_names <- input$factor
-      
-      for (i in 1:num) {
-        dat <- dat %>%
-          filter(dat[[input$factor[i]]] %in% c(input[[paste0("filter", i)]])) %>%
-          droplevels()
-      }
-      
-      incProgress(0.25, detail = paste("Doing part", 2))
-      dat
-    })
+    }
+    
+    num <- length(input$factor)
+    col_names <- input$factor
+    
+    for (i in 1:num) {
+      dat <- dat %>%
+        filter(dat[[input$factor[i]]] %in% c(input[[paste0("filter", i)]])) %>%
+        droplevels()
+    }
+    dat
   })
-
+  
   # Update choices for analysis
   observeEvent(input$filter_ready, {
     data_names <- colnames(button1())
@@ -292,10 +294,15 @@ mod_MixedModel_server <- function(input, output, session){
                        choices = data_names)
   })
   
+  observeEvent(input$parameter_choice, {
+    showNotification("Parameters chose")
+  })
+  
   # Analysis function
   button3 <- eventReactive(input$analysis_run, {
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
+      req(input$parameter_choice)
       dat <- button2()
       
       if (ncol(dat) > 0) {
@@ -326,7 +333,7 @@ mod_MixedModel_server <- function(input, output, session){
       list(mod, summary_mod, aic_bic, BLUPs)
     })
   })
-
+  
   # Output for variance components
   output$varcomp_out <- DT::renderDataTable({
     dat <- data.frame(button3()[[2]]$varcomp)
@@ -394,7 +401,7 @@ mod_MixedModel_server <- function(input, output, session){
     dat <- data.frame(button3()[[4]])
     dat[,1] <- as.factor(dat[,1])
     dat[,2] <- as.numeric(dat[,2])
-
+    
     ggplot(dat, 
            aes(x = dat[,1], y = dat[,2])) +
       geom_point(color = "#cc662f", size = 3) +
@@ -421,14 +428,16 @@ mod_MixedModel_server <- function(input, output, session){
   }
   
   # download handler
-  output$download_rdata <- downloadHandler(
-    filename = r_downloadname,
-    content = function(file) {
-      r_download()
-      file.copy(r_downloadname(), file, overwrite=T)
-      file.remove(r_downloadname())
-    }
-  )
+  observeEvent(input$analysis_run, {
+    output$download_rdata <- downloadHandler(
+      filename = r_downloadname,
+      content = function(file) {
+        r_download()
+        file.copy(r_downloadname(), file, overwrite=T)
+        file.remove(r_downloadname())
+      }
+    )
+  })
 }
 
 ## To be copied in the UI
