@@ -45,19 +45,19 @@ mod_MixedModel_ui <- function(id){
              # Data Filtering
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status = "primary", title = "Data Filtering",
                  box(width = 12,
-                 radioButtons(ns("filter"), label = p("Do you need to filter your data?"),
+                 radioButtons(ns("filter_choice"), label = p("Do you need to filter your data?"),
                               choices = c("Yes", "No"),
                               selected = "No"),
                  p("If you don't need to filter your data, just press the 'Data Filters' button and continue with the next steps.")
                  ),
                  
-                 uiOutput(ns("dynamic_filter_select")),
+                 uiOutput(ns("filter_dynamic_factor")),
                  br(),
-                 uiOutput(ns("dynamic_filter_select2")),
+                 uiOutput(ns("filter_dynamic_button")),
                  br(),
-                 uiOutput(ns("dynamic_filter_boxes")),
+                 uiOutput(ns("filter_dynamic_level")),
                  
-                 actionButton(ns("filter_data"), "Data Filters", icon("filter"))
+                 actionButton(ns("filter_ready"), "Data Filters", icon("filter"))
              ),
              
              # Choose Parameters
@@ -68,22 +68,22 @@ mod_MixedModel_ui <- function(id){
                                   selected = "Press 'Data Filters' button to update"),
                  ),
                  box(width = 4,
-                     radioButtons(ns("local"), label = p("Choose the fixed effect to be evaluated:"),
+                     radioButtons(ns("fixed_ef"), label = p("Choose the fixed effect to be evaluated:"),
                                   choices = "Press 'Data Filters' button to update",
                                   selected = "Press 'Data Filters' button to update")
                  ),
                  box(width = 4,
-                     radioButtons(ns("harve"), label = p("Choose the random effect to be evaluated:"),
+                     radioButtons(ns("random_ef"), label = p("Choose the random effect to be evaluated:"),
                                   choices = "Press 'Data Filters' button to update",
                                   selected = "Press 'Data Filters' button to update")
                  ),
                  hr(),
-                 actionButton(ns("select_data"), "Model Parameters", icon("check"))
+                 actionButton(ns("parameter_choice"), "Model Parameters", icon("check"))
              ),
              
              
              # Define the model
-             box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Define the model:",
+             box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Define the model",
                  p("If you want to consider a pedigree matrix, please submit an csv file as the example:"),
                  downloadButton(ns("pedigree_example")), hr(),
                  fileInput("pedigree", label = p("Pedigree matrix")),
@@ -93,29 +93,29 @@ mod_MixedModel_ui <- function(id){
                  textInput(ns("fixed"), label = p("Fixed:"), value = "Peso ~ Corte + Corte:Bloco"),
                  textInput(ns("random"), label = p("Random:"), value = "~ Genotipo + Corte:Genotipo"),
                  textInput(ns("rcov"), label = p("rcov:"), value = "~ units"), hr(),
-                 actionButton(ns("run_analysis"), "Run analysis",icon("refresh")), br(),
+                 actionButton(ns("analysis_run"), "Run analysis",icon("refresh")), br(),
                  p("Expand the windows above to access the results")
              ), hr(),
              
              # Results
-             box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, status="info", title = "Results:",
-                 box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Variance components:",
+             box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, status="info", title = "Results",
+                 box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Variance components",
                      DT::dataTableOutput(ns("varcomp_out"))
                  ),
                  box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "AIC and BIC",
                      DT::dataTableOutput(ns("aic_bic_out"))
                  ),
                  box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "BLUPs",
-                     box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "BLUP by Genotype Table",
-                         DT::dataTableOutput(ns("blups_out")),
+                     box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Table Visualization",
+                         DT::dataTableOutput(ns("blups_table_out")),
                      ),
-                     box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "BLUP by Genotype Graph",
-                         plotOutput(ns("plot_blups")),
+                     box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Graph Visualization",
+                         plotOutput(ns("blups_graph_out")),
                      ),
                  ),
                  hr(),
                  # Download
-                 downloadButton(ns('bn_download'), "Download .RData", class = "butt")
+                 downloadButton(ns('download_rdata'), "Download .RData", class = "butt")
              )
     )
   )
@@ -183,8 +183,8 @@ mod_MixedModel_server <- function(input, output, session){
   
   # Dynamic UI for filtering data
   observeEvent(input$data_load, {
-      output$dynamic_filter_select <- renderUI({
-        req(input$filter == "Yes")
+      output$filter_dynamic_factor <- renderUI({
+        req(input$filter_choice == "Yes")
         choices_trait_temp <- colnames(button1())
         #Choose the trait and the location
         choices_trait <- choices_trait_temp
@@ -207,21 +207,21 @@ mod_MixedModel_server <- function(input, output, session){
   })
   
   observeEvent(input$data_load, {
-    output$dynamic_filter_select2 <- renderUI({
-      req(input$filter == "Yes")
+    output$filter_dynamic_button <- renderUI({
+      req(input$filter_choice == "Yes")
       dat <- button1()
       
       num <- 1
 
-        actionButton(ns("filter_read"), "Select levels", icon("plus"))
+        actionButton(ns("filter_in_process"), "Select levels", icon("plus"))
       
     })
   })
   
   # Reactive filter data
   observeEvent(input$data_load, {
-      output$dynamic_filter_boxes <- renderUI({
-        req(input$filter == "Yes")
+      output$filter_dynamic_level <- renderUI({
+        req(input$filter_choice == "Yes")
         dat <- button1()
         
         if (length(input$select) > 0) {
@@ -251,8 +251,8 @@ mod_MixedModel_server <- function(input, output, session){
     })
   })
   
-    observeEvent(input$filter_read, {
-        req(input$filter == "Yes")
+    observeEvent(input$filter_in_process, {
+        req(input$filter_choice == "Yes")
         dat <- button1()
 
         if (length(input$select) > 0) {
@@ -280,7 +280,7 @@ mod_MixedModel_server <- function(input, output, session){
       })
 
   # Data Filtering
-  button3 <- eventReactive(input$filter_data, {
+  button3 <- eventReactive(input$filter_ready, {
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
       
@@ -308,7 +308,7 @@ mod_MixedModel_server <- function(input, output, session){
   })
 
   # Update choices for analysis
-  observeEvent(input$filter_data, {
+  observeEvent(input$filter_ready, {
     choices_trait_temp <- colnames(button1())
     choices_trait <- choices_trait_temp
     names(choices_trait) <- choices_trait_temp
@@ -318,17 +318,17 @@ mod_MixedModel_server <- function(input, output, session){
                        choices = choices_trait,
                        selected = unlist(choices_trait)[1])
     
-    updateRadioButtons(session, "local",
+    updateRadioButtons(session, "fixed_ef",
                        label="Choose the fixed effect to be evaluated:",
                        choices = choices_trait)
     
-    updateRadioButtons(session, "harve",
+    updateRadioButtons(session, "random_ef",
                        label="Choose the random effect to be evaluated:",
                        choices = choices_trait)
   })
   
   # Analysis function
-  button2 <- eventReactive(input$run_analysis, {
+  button2 <- eventReactive(input$analysis_run, {
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
       dat <- button3()
@@ -358,7 +358,7 @@ mod_MixedModel_server <- function(input, output, session){
       
       aic_bic <- data.frame(AIC = mod$AIC, BIC = mod$BIC)
       
-      BLUPs <- data.frame(ID = levels(dat[[input$harve]]), BLUPs = mod$U[[input$harve]])
+      BLUPs <- data.frame(ID = levels(dat[[input$random_ef]]), BLUPs = mod$U[[input$random_ef]])
       rownames(BLUPs) <- NULL
       
       incProgress(0.25, detail = paste("Doing part", 2))
@@ -414,7 +414,7 @@ mod_MixedModel_server <- function(input, output, session){
   })
   
   # Output for BLUPs - Table
-  output$blups_out <- DT::renderDataTable({
+  output$blups_table_out <- DT::renderDataTable({
     data <- data.frame(button2()[[4]])
     
     # Especifique as colunas que deseja arredondar e o número de casas decimais
@@ -438,7 +438,7 @@ mod_MixedModel_server <- function(input, output, session){
   })
   
   # Output for BLUPs - Graph
-  output$plot_blups <- renderPlot({
+  output$blups_graph_out <- renderPlot({
     data <- data.frame(button2()[[4]])
     data[,1] <- as.factor(data[,1])
     data[,2] <- as.numeric(data[,2])
@@ -447,7 +447,8 @@ mod_MixedModel_server <- function(input, output, session){
            aes(x = data[,1], y = data[,2])) +
       geom_point(color = "#cc662f", size = 3) +
       geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-      labs(y = "BLUP") +
+      labs(x = input$random_ef,
+        y = "BLUP") +
       theme_minimal() +
       theme(axis.title.x = element_text(size = 16),
             axis.title.y = element_text(size = 16),
@@ -469,7 +470,7 @@ mod_MixedModel_server <- function(input, output, session){
   }
   
   # download handler
-  output$bn_download <- downloadHandler(
+  output$download_rdata <- downloadHandler(
     filename = fn_downloadname,
     content = function(file) {
       fn_download()
