@@ -29,12 +29,12 @@ mod_MixedModel_ui <- function(id){
                  # Input Control
                  hr(),
                  box(width = 4,
-                     radioButtons(ns("data_view"), label = p("Choose the separator:"),
+                     radioButtons(ns("data_sep"), label = p("Choose the separator:"),
                                   choices = list("Comma" = ",", "Semicolon" = ";", "Tab" = "\t"),
                                   selected = ",") 
                  ), 
-                 box(width = 8,  
-                     tableOutput(ns("dataview"))
+                 box(width = 8, 
+                     uiOutput(ns("data_dynamic_view")),
                  ),
                  
                  # Read the file
@@ -131,7 +131,7 @@ mod_MixedModel_ui <- function(id){
 mod_MixedModel_server <- function(input, output, session){
   ns <- session$ns
   
-  ## Download input
+  # Download input
   output$data_example <- downloadHandler(
     filename =  function() {
       paste("example_data.csv")
@@ -144,20 +144,20 @@ mod_MixedModel_server <- function(input, output, session){
   )
   
   # Observe the file input and display the data
-  observeEvent(input$data_view, {
-    observeEvent(input$data_input, {
+  observeEvent(input$data_sep, {
+    output$data_dynamic_view <- renderUI({
       if (is.null(input$data_input)) {
-        output$dataview <- renderTable({
-          return(p("Upload your data"))
+        output$dataview <- renderUI({
+          return(p("Please upload your file to update this section."))
         })
       } else {
-        df <- read.csv(input$data_input$datapath, sep = input$data_view)
+        dat <- read.csv(input$data_input$datapath, sep = input$data_sep)
         output$dataview <- renderTable({
-          return(head(df))
+          return(head(dat))
         })
       }
     })
-  })  
+  })
   
   # Download example pedigree data
   output$pedigree_example <- downloadHandler(
@@ -176,33 +176,22 @@ mod_MixedModel_server <- function(input, output, session){
     if (is.null(input$data_input$datapath)) {
       dat <- read.csv(system.file("ext","example_inputs/example_blocks.csv", package = "StatGenESALQ"))
     } else {
-      dat <- read.csv(input$data_input$datapath, sep = input$data_view)
+      dat <- read.csv(input$data_input$datapath, sep = input$data_sep)
     }
     dat
   })
   
   # Dynamic UI for filtering data
   observeEvent(input$data_load, {
-      output$filter_dynamic_factor <- renderUI({
-        req(input$filter_choice == "Yes")
-        choices_trait_temp <- colnames(button1())
-        #Choose the trait and the location
-        choices_trait <- choices_trait_temp
-        names(choices_trait) <- choices_trait_temp
-        
-        num <- 1
-        
-        lapply(seq_len(num), function(i) {
-            box(
-              width = 12,
-              checkboxGroupInput(
-                ns("select"),
-                label = p("Choose the factors to be filtered:"),
-                choices = choices_trait,
-                selected = choices_trait[1]
-              )
-            )
-       })
+    output$filter_dynamic_factor <- renderUI({
+      req(input$filter_choice == "Yes")
+      data_names <- colnames(button1())
+      
+      box(width = 12,
+          checkboxGroupInput(ns("factor"), label = p("Choose the factors to be filtered:"),
+                             choices = data_names,
+                             selected = data_names[1])
+      )
     })
   })
   
@@ -211,127 +200,103 @@ mod_MixedModel_server <- function(input, output, session){
       req(input$filter_choice == "Yes")
       dat <- button1()
       
-      num <- 1
-
         actionButton(ns("filter_in_process"), "Select levels", icon("plus"))
-      
     })
   })
   
   # Reactive filter data
   observeEvent(input$data_load, {
-      output$filter_dynamic_level <- renderUI({
-        req(input$filter_choice == "Yes")
-        dat <- button1()
-        
-        if (length(input$select) > 0) {
-          n <- length(input$select)
-          for (i in 1:n) {
-            dat[[input$select[i]]] <- as.factor(dat[[input$select[i]]])
-          }
-        } 
-        
-        num <- length(input$select)
-        col_names <- input$select
-        
-        lapply(seq_len(num), function(i) {
-          if(is.factor(dat[[input$select[i]]])) {
-            box(
-              width = 12,
-              checkboxGroupInput(
-                ns(paste0("filter", i)),
-                # Choose the 'local' levels to select:
-                label = paste0("Choose the levels from '", col_names[i], "' to be filtered:"),
-                choices = "Press 'Filter' button to update"
-              )
-            )
-          }
-        })
-
+    output$filter_dynamic_level <- renderUI({
+      req(input$filter_choice == "Yes")
+      
+      num <- length(input$factor)
+      col_names <- input$factor
+      
+      lapply(seq_len(num), function(i) {
+        box(width = 12,
+            checkboxGroupInput(ns(paste0("filter", i)),
+                               label = paste0("Choose the levels from '", col_names[i], "' to be filtered:"),
+                               choices = "Press 'Select levels' button to update")
+        )
+      })
     })
   })
   
-    observeEvent(input$filter_in_process, {
-        req(input$filter_choice == "Yes")
-        dat <- button1()
-
-        if (length(input$select) > 0) {
-          n <- length(input$select)
-          for (i in 1:n) {
-            dat[[input$select[i]]] <- as.factor(dat[[input$select[i]]])
-          }
-        }
-
-        num <- length(input$select)
-        col_names <- input$select
-
-        lapply(seq_len(num), function(i) {
-          if(is.factor(dat[[input$select[i]]])) {
-            box(
-              width = 12,
-              updateCheckboxGroupInput(session,
-                paste0("filter", i),
-                label = paste0("Choose the levels from '", col_names[i], "' to be filtered:"),
-                choices = unique(dat[[input$select[i]]])
-              )
-            )
-          }
-        })
-      })
+  observeEvent(input$filter_in_process, {
+    req(input$filter_choice == "Yes")
+    
+    dat <- button1()
+    if (length(input$factor) > 0) {
+      n <- length(input$factor)
+      for (i in 1:n) {
+        dat[[input$factor[i]]] <- as.factor(dat[[input$factor[i]]])
+      }
+    }
+    
+    num <- length(input$factor)
+    col_names <- input$factor
+    
+    lapply(seq_len(num), function(i) {
+      if(is.factor(dat[[input$factor[i]]])) {
+        box(width = 12,
+            updateCheckboxGroupInput(session, paste0("filter", i),
+                                     label = paste0("Choose the levels from '", col_names[i], "' to be filtered:"),
+                                     choices = unique(dat[[input$factor[i]]]))
+        )
+      }
+    })
+  })
 
   # Data Filtering
-  button3 <- eventReactive(input$filter_ready, {
+  button2 <- eventReactive(input$filter_ready, {
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
       
-      data <- button1()
-      
-      if (length(input$select) > 0) {
-        n <- length(input$select)
+      dat <- button1()
+      if (length(input$factor) > 0) {
+        n <- length(input$factor)
         for (i in 1:n) {
-          data[[input$select[i]]] <- as.factor(data[[input$select[i]]])
+          dat[[input$factor[i]]] <- as.factor(dat[[input$factor[i]]])
         }
-      } 
+      }
       
-      num <- length(input$select)
-      col_names <- input$select
+      num <- length(input$factor)
+      col_names <- input$factor
       
       for (i in 1:num) {
-        data <- data %>%
-          filter(data[[input$select[i]]] %in% c(input[[paste0("filter", i)]])) %>%
+        dat <- dat %>%
+          filter(dat[[input$factor[i]]] %in% c(input[[paste0("filter", i)]])) %>%
           droplevels()
       }
       
       incProgress(0.25, detail = paste("Doing part", 2))
-      data
+      dat
     })
   })
 
   # Update choices for analysis
   observeEvent(input$filter_ready, {
-    choices_trait_temp <- colnames(button1())
-    choices_trait <- choices_trait_temp
-    names(choices_trait) <- choices_trait_temp
+    data_names <- colnames(button1())
     
     updateRadioButtons(session, "trait",
                        label="Choose the trait to be evaluated:",
-                       choices = choices_trait,
-                       selected = unlist(choices_trait)[1])
+                       choices = data_names,
+                       selected = unlist(data_names)[1])
     
     updateRadioButtons(session, "fixed_ef",
                        label="Choose the fixed effect to be evaluated:",
-                       choices = choices_trait)
+                       choices = data_names)
     
     updateRadioButtons(session, "random_ef",
                        label="Choose the random effect to be evaluated:",
-                       choices = choices_trait)
+                       choices = data_names)
   })
   
   # Analysis function
-  button2 <- eventReactive(input$analysis_run, {
+  button3 <- eventReactive(input$analysis_run, {
     withProgress(message = 'Building graphic', value = 0, {
       incProgress(0, detail = paste("Doing part", 1))
-      dat <- button3()
+      dat <- button2()
       
       if (ncol(dat) > 0) {
         n <- ncol(dat)
@@ -343,9 +308,7 @@ mod_MixedModel_server <- function(input, output, session){
           }
         }
       } 
-      
       if(!is.null(input$pedigree)) A <- read.csv(input$pedigree$datapath, row.names = 1, header = T)
-      
       
       # Input the model
       mod <- mmer(fixed = as.formula(input$fixed), 
@@ -355,100 +318,89 @@ mod_MixedModel_server <- function(input, output, session){
       
       # Results
       summary_mod <- summary(mod)
-      
       aic_bic <- data.frame(AIC = mod$AIC, BIC = mod$BIC)
-      
       BLUPs <- data.frame(ID = levels(dat[[input$random_ef]]), BLUPs = mod$U[[input$random_ef]])
       rownames(BLUPs) <- NULL
       
       incProgress(0.25, detail = paste("Doing part", 2))
-      # list(mod,summary_mod, aic_bic, BLUPs)
-      list(mod,summary_mod, aic_bic, BLUPs)
+      list(mod, summary_mod, aic_bic, BLUPs)
     })
   })
 
   # Output for variance components
   output$varcomp_out <- DT::renderDataTable({
-    data <- data.frame(button2()[[2]]$varcomp)
+    dat <- data.frame(button3()[[2]]$varcomp)
     
-    # Especifique as colunas que deseja arredondar e o número de casas decimais
-    decimal_places1 <- 2  # Especifique o número de casas decimais
-    
-    # Arredonde as colunas selecionadas
+    # Rounding of numbers
+    decimal_places <- 2  
     for (col in 1:3) {
-      data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
+      dat[[col]] <- round(as.numeric(dat[[col]]), decimal_places)
     }
     
-    DT::datatable(data,  
+    DT::datatable(dat,  
                   extensions = 'Buttons',
                   options = list(
                     dom = 'Bfrtlp',
                     buttons = c('copy', 'csv', 'excel', 'pdf'),
-                    columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centraliza o texto de todas as colunas
+                    columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centralize
                   ),
                   class = "display")
   })
   
   # Output for AIC and BIC
   output$aic_bic_out <- DT::renderDataTable({
-    data <- data.frame(button2()[[3]])
+    dat <- data.frame(button3()[[3]])
     
-    # Especifique as colunas que deseja arredondar e o número de casas decimais
-    decimal_places1 <- 2  # Especifique o número de casas decimais
-    
-    # Arredonde as colunas selecionadas
+    # Rounding of numbers
+    decimal_places <- 2  
     for (col in 1:2) {
-      data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
+      dat[[col]] <- round(as.numeric(dat[[col]]), decimal_places)
     }
     
-    # Outputs
-    DT::datatable(data,
+    DT::datatable(dat,
                   rownames = FALSE,
                   extensions = 'Buttons',
                   options = list(
                     dom = 'Brt',
                     buttons = c('copy', 'csv', 'excel', 'pdf'),
-                    columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centraliza o texto de todas as colunas
+                    columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centralize
                   ),
                   class = "display")
   })
   
   # Output for BLUPs - Table
   output$blups_table_out <- DT::renderDataTable({
-    data <- data.frame(button2()[[4]])
+    dat <- data.frame(button3()[[4]])
     
-    # Especifique as colunas que deseja arredondar e o número de casas decimais
-    decimal_places1 <- 2  # Especifique o número de casas decimais
-    
-    # Arredonde as colunas selecionadas
+    # Rounding of numbers
+    decimal_places <- 2  
     for (col in 2) {
-      data[[col]] <- round(as.numeric(data[[col]]), decimal_places1)
+      dat[[col]] <- round(as.numeric(dat[[col]]), decimal_places)
     }
     
-    # Outputs
-    DT::datatable(data,
+    DT::datatable(dat,
                   rownames = FALSE,
                   extensions = 'Buttons',
                   options = list(
                     dom = 'Bfrtlp',
                     buttons = c('copy', 'csv', 'excel', 'pdf'),
-                    columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centraliza o texto de todas as colunas
+                    columnDefs = list(list(className = 'dt-center', targets = '_all')) # Centralize
                   ),
                   class = "display")
   })
   
   # Output for BLUPs - Graph
   output$blups_graph_out <- renderPlot({
-    data <- data.frame(button2()[[4]])
-    data[,1] <- as.factor(data[,1])
-    data[,2] <- as.numeric(data[,2])
-    # Plot the data and analyze the BLUP.
-    ggplot(data, 
-           aes(x = data[,1], y = data[,2])) +
+    dat <- data.frame(button3()[[4]])
+    dat[,1] <- as.factor(dat[,1])
+    dat[,2] <- as.numeric(dat[,2])
+
+    ggplot(dat, 
+           aes(x = dat[,1], y = dat[,2])) +
       geom_point(color = "#cc662f", size = 3) +
       geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
       labs(x = input$random_ef,
-        y = "BLUP") +
+           y = "BLUP") +
       theme_minimal() +
       theme(axis.title.x = element_text(size = 16),
             axis.title.y = element_text(size = 16),
@@ -457,25 +409,24 @@ mod_MixedModel_server <- function(input, output, session){
   })
   
   # Download results
-  fn_downloadname <- reactive({
+  r_downloadname <- reactive({
     seed <- sample(1:10,1)
     filename <- paste0("mixedmodel","_",seed,".RData")
     return(filename)
   })
   
-  # download profile 
-  fn_download <- function() {
-    mixedmodel <- button2()[[1]]
-    save(mixedmodel, file = fn_downloadname())
+  r_download <- function() {
+    mixedmodel <- button3()[[1]]
+    save(mixedmodel, file = r_downloadname())
   }
   
   # download handler
   output$download_rdata <- downloadHandler(
-    filename = fn_downloadname,
+    filename = r_downloadname,
     content = function(file) {
-      fn_download()
-      file.copy(fn_downloadname(), file, overwrite=T)
-      file.remove(fn_downloadname())
+      r_download()
+      file.copy(r_downloadname(), file, overwrite=T)
+      file.remove(r_downloadname())
     }
   )
 }
