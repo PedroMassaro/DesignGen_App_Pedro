@@ -14,7 +14,13 @@ mod_MixedModel_ui <- function(id){
   tagList(
     fluidRow(style = "height:8000px",
              box(width = 12, 
-                 p("Run analysis with mixed models")
+                 p(HTML("On this page, you can run analyses with mixed models. During this process, you can filter your data before the analysis and view previous results or export them afterward. 
+                 Please keep the following points in mind: 
+                 <ul>
+                 <li>Follow each step and press the button at the end of each one.</li>
+                 <li>If you select something incorrectly or wish to make a change, you can return to the specific section/step you need to modify and then proceed with the subsequent steps.</li>
+                 <li>The 'sommer' package is used to perform the analysis, so its syntax should be considered.</li>
+                        </ul>")),
              ),
              
              # Input the file
@@ -65,7 +71,7 @@ mod_MixedModel_ui <- function(id){
              ),
              
              # Choose Parameters
-             box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Select variables",
+             box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Select parameters",
                  box(width = 4,
                      radioButtons(ns("trait"), label = p("Choose the trait to be evaluated:"),
                                   choices = "Press 'Filter Data' button to update",
@@ -103,7 +109,7 @@ mod_MixedModel_ui <- function(id){
                         and the tutorials by 'sommer' package. To access theses tutorials, run the following code in the R console:")),
                  verbatimTextOutput(ns("sommer_tutorial")), 
                  hr(),
-                 
+                 p("When you call the variables in your model, use the same column names present in your data."),
                  textInput(ns("fixed"), label = p("Fixed:"), value = "Peso ~ Corte + Corte:Bloco"),
                  textInput(ns("random"), label = p("Random:"), value = "~ Genotipo + Corte:Genotipo"),
                  textInput(ns("rcov"), label = p("rcov:"), value = "~ units"), hr(),
@@ -130,7 +136,7 @@ mod_MixedModel_ui <- function(id){
                      ),
                  ),
                  # Download
-                 p("Click here to download the complete analysis data in .RData format.  
+                 p("Click here to download the complete analysis data in '.RData' format.  
                    Once you import this into R or RStudio, an object named 'mixedmodel' will be created, enabling you to work with it."),
                  downloadButton(ns('download_rdata'), "Download .RData", class = "butt") 
              )
@@ -155,7 +161,7 @@ mod_MixedModel_server <- function(input, output, session){
     },
     # Content is a function with argument file. content writes the plot to the device
     content = function(file) {
-      dat <- read.csv(system.file("ext","example_inputs/example_blocks.csv", package = "StatGenESALQ"))
+      dat <- read.csv(system.file("ext","example_inputs/example_split.csv", package = "StatGenESALQ"))
       write.csv(dat, file = file, row.names = F)
     } 
   )
@@ -191,7 +197,7 @@ mod_MixedModel_server <- function(input, output, session){
   # Data Loading
   button1 <- eventReactive(input$data_load, {
     if (is.null(input$data_input$datapath)) {
-      dat <- read.csv(system.file("ext","example_inputs/example_blocks.csv", package = "StatGenESALQ"))
+      dat <- read.csv(system.file("ext","example_inputs/example_split.csv", package = "StatGenESALQ"))
     } else {
       dat <- read.csv(input$data_input$datapath, sep = input$data_sep)
     }
