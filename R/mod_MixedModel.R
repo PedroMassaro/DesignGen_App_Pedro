@@ -90,15 +90,24 @@ mod_MixedModel_ui <- function(id){
              
              # Define the model
              box(width = 12, solidHeader = TRUE, collapsible = TRUE, status="primary", title = "Define the model",
-                 p("If you want to consider a pedigree matrix, please submit an csv file as the example:"),
-                 downloadButton(ns("pedigree_example")), hr(),
+                 p("If you want to consider a pedigree matrix, please upload an .csv file as the example:"),
+                 downloadButton(ns("pedigree_example")),
+                 hr(),
                  fileInput("pedigree", label = p("Pedigree matrix")),
                  hr(),
-                 p("Define the model expression bellow. Here we used 'sommer' package to perform the analysis. Then, consider its syntax."),
-                 p("If you uploaded the pedigree matrix above you can add it in the model with the symbol A."),
+                 
+                 p("Define the model expression bellow. Here we used 'sommer' package to perform the analysis, so consider its syntax.
+                 If it has been uploaded above, you can include it in the model using the symbol A, according to this package syntax."),
+                 p(HTML("For more information, consult the
+                        <a href= 'https://www.rdocumentation.org/packages/sommer/versions/4.1.2/topics/mmer' target = '_blank' > R documentation </a>
+                        and the tutorials by 'sommer' package. To access theses tutorials, run the following code in the R console:")),
+                 verbatimTextOutput(ns("sommer_tutorial")), 
+                 hr(),
+                 
                  textInput(ns("fixed"), label = p("Fixed:"), value = "Peso ~ Corte + Corte:Bloco"),
                  textInput(ns("random"), label = p("Random:"), value = "~ Genotipo + Corte:Genotipo"),
                  textInput(ns("rcov"), label = p("rcov:"), value = "~ units"), hr(),
+                 
                  actionButton(ns("analysis_run"), "Run analysis",icon("refresh")), 
                  br(),
                  h6("Click here and expand the windows above to access the results")
@@ -121,8 +130,9 @@ mod_MixedModel_ui <- function(id){
                      ),
                  ),
                  # Download
-                 p("Click here to download the complete analysis data in .RData format"),
-                 downloadButton(ns('download_rdata'), "Download .RData", class = "butt")
+                 p("Click here to download the complete analysis data in .RData format.  
+                   Once you import this into R or RStudio, an object named 'mixedmodel' will be created, enabling you to work with it."),
+                 downloadButton(ns('download_rdata'), "Download .RData", class = "butt") 
              )
     )
   )
@@ -332,6 +342,13 @@ mod_MixedModel_server <- function(input, output, session){
       incProgress(0.25, detail = paste("Doing part", 2))
       list(mod, summary_mod, aic_bic, BLUPs)
     })
+  })
+  
+  output$sommer_tutorial <- renderPrint({
+    cat("> vignette('v1.sommer.quick.start')",
+        "> vignette('v2.sommer.changes.and.faqs')",
+        "> vignette('v3.sommer.qg')",
+        "> vignette('v4.sommer.gxe')", sep = "\n")
   })
   
   # Output for variance components
