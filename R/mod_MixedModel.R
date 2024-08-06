@@ -110,8 +110,8 @@ mod_MixedModel_ui <- function(id){
                  verbatimTextOutput(ns("sommer_tutorial")), 
                  hr(),
                  p("When you call the variables in your model, use the same column names present in your data."),
-                 textInput(ns("fixed"), label = p("Fixed:"), value = "Peso ~ Corte + Corte:Bloco"),
-                 textInput(ns("random"), label = p("Random:"), value = "~ Genotipo + Corte:Genotipo"),
+                 textInput(ns("fixed"), label = p("Fixed:"), value = "Weight ~ Harvest + Harvest:Block"),
+                 textInput(ns("random"), label = p("Random:"), value = "~ Genotype + Harvest:Genotype"),
                  textInput(ns("rcov"), label = p("rcov:"), value = "~ units"), hr(),
                  
                  actionButton(ns("analysis_run"), "Run analysis",icon("refresh")), 
