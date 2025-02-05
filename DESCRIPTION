@@ -2,6 +2,7 @@ Package: StatGenESALQ
 Title: StatGen-ESALQ App
 Version: 0.0.0.9000
 Authors@R: c(person('Cristiane Hayumi', 'Taniguti', email = 'chtaniguti@usp.br', role = c('cre', 'aut')),
+             person('Pedro Henrique', 'Massaro da Silveira', email = 'pedrohmassaro@usp.br', role = c('aut')))
              person('Jenifer Camila', 'Godoy dos Santos', email = 'godoycamilajds@usp.br', role = c('aut')),
              person('Kaio', 'Olimpio das Graças Dias', email = 'kaioolimpio@usp.br', role = c('aut')),
              person('Wellingson', 'Assunção Araújo', email = 'wellingson.araujo@usp.br', role = c('aut')),
@@ -32,7 +33,8 @@ Imports:
     sommer,
     dplyr,
     AGHmatrix,
-    GAD
+    GAD,
+    shinyWidgets
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1

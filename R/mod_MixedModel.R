@@ -14,12 +14,13 @@ mod_MixedModel_ui <- function(id){
   tagList(
     fluidRow(style = "height:8000px",
              box(width = 12, 
-                 p(HTML("On this page, you can run analyses with mixed models. During this process, you can filter your data before the analysis and view previous results or export them afterward. 
-                 Please keep the following points in mind: 
+                 p(HTML("On this page, you can perform analyses using mixed models. Before starting your analysis, you can filter your data to meet your requirements. Once your analysis is complete, you can review or export previous results for future reference.
                  <ul>
-                 <li>Follow each step and press the button at the end of each one.</li>
-                 <li>If you select something incorrectly or wish to make a change, you can return to the specific section/step you need to modify and then proceed with the subsequent steps.</li>
-                 <li>The 'sommer' package is used to perform the analysis, so its syntax should be considered.</li>
+                  Please keep the following points in mind:
+                 <ul>
+                 <li>Follow each step and press the button at the end of each one;</li>
+                 <li>If you select something incorrectly or wish to change, you can return to the specific section to modify it and proceed with the subsequent steps;</li>
+                 <li>The 'sommer' package performs the analysis, so its syntax should be considered.</li>
                         </ul>")),
              ),
              
@@ -135,7 +136,41 @@ mod_MixedModel_ui <- function(id){
                      ),
                      box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Graph Visualization",
                          plotOutput(ns("blups_graph_out")),
+                     )),
+                 box(width = 12, solidHeader = TRUE, collapsible = TRUE, collapsed = T, title = "Interaction",
+                     box(width = 12, solidHeader = TRUE, status="info", title = "Select the Random Effect Variables:", #
+                         selectInput(
+                           inputId = ns("genotypes"),
+                           label = h6("Random Effect Variables:"), 
+                           choices = "This will be updated",
+                           selected = "This will be updated",
+                           multiple = TRUE
+                         ),
+                         actionButton(ns("plot_ready"), "Run plots", icon("graph")),
                      ),
+                     
+                     box(id = ns("box_int"), width = 12, solidHeader = TRUE, collapsible = TRUE,  collapsed = FALSE, status="primary", title = actionLink(inputId = ns("intID"), label = "Interaction Graph"),
+                         column(12,
+                                column(3,
+                                       tags$head(tags$style(".butt{background-color:#add8e6; border-color: #add8e6; color: #337ab7;}")),
+                                       downloadButton(ns('bn_download'), "Download", class = "butt")
+                                ),
+                                column(3,
+                                       radioButtons(ns("fformat"), "File type", choices=c("png","tiff","jpeg","pdf", "RData"), selected = "png", inline = T)
+                                ),                     
+                                column(2,
+                                       numericInput(ns("width_int"), "Width (mm)", value = 180),
+                                ),
+                                column(2,
+                                       numericInput(ns("height_int"), "Height (mm)", value = 120),
+                                ),
+                                column(2,
+                                       numericInput(ns("dpi_int"), "DPI", value = 300)
+                                )), br(), 
+                         column(12,
+                                hr(),
+                                plotOutput(ns("plot_int"))
+                         ))
                  ),
                  # Download
                  p("Click here to download the complete analysis data in '.RData' format.  
@@ -443,6 +478,66 @@ mod_MixedModel_server <- function(input, output, session){
             axis.title.y = element_text(size = 16),
             axis.text.x = element_text(angle = 90, hjust = 1, size = 12),
             axis.text.y = element_text(size = 12))
+  })
+  
+  
+  observeEvent(input$analysis_run, {
+    dat <- button1()
+    gen_choices <- as.list(unique(dat[[input$random_ef]]))
+    names(gen_choices) <- unique(dat[[input$random_ef]])
+    
+    updateSelectInput(session = session,
+                      inputId = "genotypes",
+                      label = "Random Effect Variables:",
+                      choices = gen_choices,
+                      selected=unlist(gen_choices)[1])
+  })
+  
+  output$plot_int <- renderPlot({
+    
+    req(input$plot_ready)
+    
+    withProgress(message = 'Working:', value = 0, {
+      incProgress(0.3, detail = "building graphic...")
+      
+      dat <- button1()
+      GHI <- dat %>%
+        group_by(.data[[input$fixed_ef]], .data[[input$random_ef]]) %>%
+        summarise(
+          Trait = mean(.data[[input$trait]], na.rm = TRUE),
+          .groups = "drop"
+        )
+
+      # Ordering
+      index <- order(GHI$Trait, decreasing = FALSE)
+      GHI <- GHI[index,]
+      
+      ggplot(GHI, aes(x = .data[[input$fixed_ef]], y = Trait)) +
+        geom_line(
+          linewidth = 0.8, 
+          aes(
+            group = .data[[input$random_ef]], 
+            color = .data[[input$random_ef]], 
+            alpha = ifelse(.data[[input$random_ef]] %in% input$genotypes, 1, 0.7)
+          )
+        ) +
+        labs(
+          title = "Graphic Visualization of Interaction",
+          x = input$fixed_ef,  
+          y = paste("Average", input$trait)
+        ) +
+        guides(
+          color = guide_legend(title = input$random_ef, ncol = 1), 
+          alpha = "none"
+        ) +
+        theme_bw() +
+        scale_color_manual(
+          values = scales::hue_pal()(length(unique(input$genotypes))),
+          limits = input$genotypes,
+          breaks = input$genotypes
+        )
+      
+    })
   })
   
   # Download results
